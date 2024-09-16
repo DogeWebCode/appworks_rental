@@ -13,7 +13,7 @@ function App() {
     // 解析 Token，獲取當前使用者的 ID 或 Username
     const decodedToken = jwtDecode(token);
     console.log(decodedToken);
-    setCurrentUserId(decodedToken.sub || decodedToken.username); // 假設 Token 中的 "sub" 或 "username" 是使用者 ID
+    setCurrentUserId(decodedToken.sub || decodedToken.username); // Token 中的 "sub" 或 "username" 是使用者 ID
   };
 
   const handleLogout = () => {

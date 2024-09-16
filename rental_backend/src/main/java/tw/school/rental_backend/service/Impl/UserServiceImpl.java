@@ -5,7 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.middleware.JwtTokenProvider;
 import tw.school.rental_backend.model.user.User;
-import tw.school.rental_backend.repository.jpa.UserRepository;
+import tw.school.rental_backend.repository.jpa.user.UserRepository;
 import tw.school.rental_backend.service.UserService;
 
 @Service
@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Email is already in use");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("USER");
+        user.setRole("tenant");
         return userRepository.save(user);
     }
 
@@ -40,7 +40,6 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
-
         return jwtTokenProvider.createToken(username, user.getRole());
     }
 

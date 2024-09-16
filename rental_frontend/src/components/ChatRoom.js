@@ -176,7 +176,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       (frame) => {
         console.log("Connected: " + frame);
 
-        stompClient.current.subscribe("/user/queue/messages", (message) => {
+        stompClient.current.subscribe("/user/queue/message", (message) => {
           const newMessage = JSON.parse(message.body);
 
           if (
@@ -202,7 +202,7 @@ const ChatRoom = ({ token, currentUserId }) => {
   }, [token, currentUserId]);
 
   useEffect(() => {
-    fetch("/api/chat-partners", {
+    fetch("/api/chat/partners", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -248,7 +248,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       };
 
       setMessages((prevMessages) => [...prevMessages, chatMessage]); // 更新訊息
-      stompClient.current.send("/app/chat", {}, JSON.stringify(chatMessage));
+      stompClient.current.send("/app/message", {}, JSON.stringify(chatMessage));
       setInputMessage("");
       scrollToBottom();
     } else {
@@ -261,7 +261,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       setTargetUserId(userId);
       setTargetUserName(userId);
 
-      fetch(`/api/messages?receiverId=${userId}`, {
+      fetch(`/api/chat/messages?receiverId=${userId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

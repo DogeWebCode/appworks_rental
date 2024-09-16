@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.model.user.User;
-import tw.school.rental_backend.repository.jpa.UserRepository;
+import tw.school.rental_backend.repository.jpa.user.UserRepository;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {

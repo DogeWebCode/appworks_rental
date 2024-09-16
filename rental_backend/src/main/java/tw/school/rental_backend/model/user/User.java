@@ -36,7 +36,7 @@ public class User {
     @Column(name = "home_phone")
     private String homePhone;
 
-    private String avatar;
+    private String picture;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)

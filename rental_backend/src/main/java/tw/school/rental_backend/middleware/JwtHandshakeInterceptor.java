@@ -50,7 +50,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 return bearerToken.substring(7);
             }
         }
-        // 如果從標頭中未獲取到，嘗試從 URL 參數中獲取
+        // 如果從 Header 中未獲取到，嘗試從 URL 參數中獲取
         MultiValueMap<String, String> params = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
         return params.getFirst("token");
     }
