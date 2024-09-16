@@ -72,6 +72,7 @@ const ChatArea = styled(Box)({
   flex: 1,
   display: "flex",
   flexDirection: "column",
+  overflow: "hidden",
 });
 
 const MessageList = styled(List)(({ theme }) => ({
@@ -95,7 +96,8 @@ const StyledMessageBubble = styled(Box, {
   borderRadius: 20,
   padding: theme.spacing(1, 2),
   maxWidth: "70%",
-  wordBreak: "break-word",
+  wordBreak: "break-word", // 處理長詞換行
+  whiteSpace: "pre-wrap", // 保持換行符和空格
   boxShadow: theme.shadows[1],
 }));
 
@@ -179,6 +181,7 @@ const ChatRoom = ({ token, currentUserId }) => {
         stompClient.current.subscribe("/user/queue/message", (message) => {
           const newMessage = JSON.parse(message.body);
 
+          // 確保聊天訊息不會跑到別人的聊天室
           if (
             (newMessage.senderId === targetUserIdRef.current &&
               newMessage.receiverId === currentUserId) ||
@@ -282,9 +285,15 @@ const ChatRoom = ({ token, currentUserId }) => {
   // ---------------------------- 渲染畫面 -------------------------------------
 
   return (
-    <StyledPaper elevation={0}>
-      <Box display="flex" height="100%">
-        <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
+    <StyledPaper
+      elevation={0}
+      sx={{ height: "100vh", display: "flex", flexDirection: "column" }}
+    >
+      <Box display="flex" flexGrow={1} overflow="hidden" height="100vh">
+        <UserList
+          subheader={<ListSubheader>聊天記錄</ListSubheader>}
+          sx={{ overflowY: "auto" }}
+        >
           {userList.map((user) => (
             <ListItemButton key={user} onClick={() => selectUser(user)}>
               <Avatar sx={{ mr: 2 }}>{user[0].toUpperCase()}</Avatar>
@@ -292,8 +301,15 @@ const ChatRoom = ({ token, currentUserId }) => {
             </ListItemButton>
           ))}
         </UserList>
-        <ChatArea>
-          <ChatHeader>
+        <ChatArea
+          sx={{
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            height: "100vh",
+          }}
+        >
+          <ChatHeader sx={{ flexShrink: 0 }}>
             <Avatar sx={{ mr: 2 }}>
               {targetUserName ? targetUserName[0].toUpperCase() : "?"}
             </Avatar>
@@ -303,8 +319,13 @@ const ChatRoom = ({ token, currentUserId }) => {
                 : "請選擇想聊天的是誰～"}
             </Typography>
           </ChatHeader>
-          <Divider />
-          <MessageList ref={messageListRef}>
+          <Divider sx={{ flexShrink: 0 }} />
+
+          {/* 訊息區域設定為可滾動 */}
+          <MessageList
+            ref={messageListRef}
+            sx={{ flexGrow: 1, overflowY: "auto" }}
+          >
             {Object.entries(groupMessagesByDate(messages)).map(
               ([date, msgs]) => (
                 <React.Fragment key={date}>
@@ -349,7 +370,7 @@ const ChatRoom = ({ token, currentUserId }) => {
               )
             )}
           </MessageList>
-          <Divider />
+          <Divider sx={{ flexShrink: 0 }} />
           <MessageInput
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
@@ -357,6 +378,7 @@ const ChatRoom = ({ token, currentUserId }) => {
             isComposing={isComposing}
             setIsComposing={setIsComposing}
             disabled={!targetUserId}
+            sx={{ flexShrink: 0 }}
           />
         </ChatArea>
       </Box>
