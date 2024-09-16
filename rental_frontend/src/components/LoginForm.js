@@ -31,14 +31,14 @@ const LoginForm = ({ onLogin }) => {
   return (
     <Box sx={{ width: "300px", margin: "auto", mt: 5 }}>
       <TextField
-        label="Username"
+        label="帳號"
         fullWidth
         variant="outlined"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
       />
       <TextField
-        label="Password"
+        label="密碼"
         type="password"
         fullWidth
         variant="outlined"
@@ -52,7 +52,7 @@ const LoginForm = ({ onLogin }) => {
         onClick={handleSubmit}
         sx={{ marginTop: 2 }}
       >
-        Login
+        登入
       </Button>
     </Box>
   );

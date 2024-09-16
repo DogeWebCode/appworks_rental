@@ -1,31 +1,39 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import LoginForm from "./components/LoginForm";
 import ChatRoom from "./components/ChatRoom";
+import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
 
-const App = () => {
-  const [token, setToken] = useState(localStorage.getItem("jwtToken") || "");
+function App() {
+  const [token, setToken] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  // 當使用者成功登入時，會接收到 token，並將其設置為狀態和 localStorage
-  const handleLogin = (newToken) => {
-    setToken(newToken);
-    localStorage.setItem("jwtToken", newToken);
+  const handleLogin = (token) => {
+    setToken(token);
+
+    // 解析 Token，獲取當前使用者的 ID 或 Username
+    const decodedToken = jwtDecode(token);
+    console.log(decodedToken);
+    setCurrentUserId(decodedToken.sub || decodedToken.username); // 假設 Token 中的 "sub" 或 "username" 是使用者 ID
   };
 
-  // 當使用者登出時，清除 token 並顯示登入表單
   const handleLogout = () => {
-    setToken("");
-    localStorage.removeItem("jwtToken");
+    setToken(null);
+    setCurrentUserId(null);
   };
 
   return (
     <div>
       {token ? (
-        <ChatRoom token={token} onLogout={handleLogout} />
+        <ChatRoom
+          token={token}
+          currentUserId={currentUserId} // 動態設置當前使用者 ID
+          onLogout={handleLogout}
+        />
       ) : (
         <LoginForm onLogin={handleLogin} />
       )}
     </div>
   );
-};
+}
 
 export default App;
