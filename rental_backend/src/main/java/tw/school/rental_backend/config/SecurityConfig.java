@@ -52,7 +52,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login").permitAll()
+                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login","/api/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 阻止 Session 存在 Server Side

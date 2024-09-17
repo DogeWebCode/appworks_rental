@@ -44,13 +44,13 @@ public class Property {
     private String address;
 
     @Column(name = "price", nullable = false)
-    private int price;
+    private Integer price;
 
     @Column(name = "deposit", nullable = false)
-    private int deposit;
+    private Integer deposit;
 
     @Column(name = "management_fee")
-    private int managementFee;
+    private Integer managementFee;
 
     @Column(name = "rent_period", nullable = false)
     private String rentPeriod;
@@ -65,10 +65,10 @@ public class Property {
     private BigDecimal area;
 
     @Column(name = "floor", nullable = false)
-    private int floor;
+    private Integer floor;
 
     @Column(name = "total_floor", nullable = false)
-    private int totalFloor;
+    private Integer totalFloor;
 
     @Column(name = "lessor", nullable = false)
     private String lessor;

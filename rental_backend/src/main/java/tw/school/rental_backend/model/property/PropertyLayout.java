@@ -8,8 +8,12 @@ import lombok.Data;
 @Table(name = "property_layout")
 public class PropertyLayout {
     @Id
-    @JoinColumn(name = "property_id")
+    @Column(name = "property_id")
+    private Long propertyId;
+
     @OneToOne
+    @MapsId
+    @JoinColumn(name = "property_id")
     private Property property;
 
     @Column(name = "room_count", nullable = false)
