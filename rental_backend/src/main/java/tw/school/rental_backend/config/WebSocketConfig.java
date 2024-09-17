@@ -1,5 +1,6 @@
 package tw.school.rental_backend.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -18,6 +19,9 @@ import java.util.Map;
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @Value("${cors.allow.origins}")
+    private String allowedOrigins;
+
     private final JwtTokenProvider jwtTokenProvider;
 
     public WebSocketConfig(JwtTokenProvider jwtTokenProvider) {
@@ -34,7 +38,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         return (Principal) attributes.get("SPRING_SECURITY_CONTEXT");
                     }
                 })
-                .setAllowedOrigins("http://localhost:3000")
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS()
                 .setSessionCookieNeeded(false); // 禁用來源檢查
     }
