@@ -9,4 +9,5 @@ import java.util.List;
 public interface RecommendationService {
 
     ResponseDTO<List<PropertyDTO>> recommendPropertyForUser(Long userId, Pageable pageable);
+
 }

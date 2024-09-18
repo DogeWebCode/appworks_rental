@@ -5,14 +5,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.data.dto.PropertyDTO;
-import tw.school.rental_backend.data.dto.PropertyLayoutDTO;
 import tw.school.rental_backend.data.dto.ResponseDTO;
+import tw.school.rental_backend.mapper.PropertyMapper;
 import tw.school.rental_backend.model.property.Property;
-import tw.school.rental_backend.model.property.PropertyLayout;
 import tw.school.rental_backend.model.user.UserAction;
 import tw.school.rental_backend.repository.jpa.property.PropertyRepository;
 import tw.school.rental_backend.repository.jpa.user.UserActionRepository;
-import tw.school.rental_backend.repository.jpa.property.PropertyLayoutRepository;
 import tw.school.rental_backend.service.RecommendationService;
 
 import java.util.*;
@@ -24,12 +22,12 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private final UserActionRepository userActionRepository;
     private final PropertyRepository propertyRepository;
-    private final PropertyLayoutRepository propertyLayoutRepository;
+    private final PropertyMapper propertyMapper;
 
-    public RecommendationServiceImpl(UserActionRepository actionRepository, PropertyRepository propertyRepository, PropertyLayoutRepository propertyLayoutRepository) {
+    public RecommendationServiceImpl(UserActionRepository actionRepository, PropertyRepository propertyRepository, PropertyMapper propertyMapper) {
         this.userActionRepository = actionRepository;
         this.propertyRepository = propertyRepository;
-        this.propertyLayoutRepository = propertyLayoutRepository;
+        this.propertyMapper = propertyMapper;
     }
 
     @Override
@@ -41,10 +39,10 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (userActions.isEmpty()) {
             Page<Property> latestPropertiesPage = propertyRepository.findTop10ByOrderByCreatedAtDesc(pageable);
             List<PropertyDTO> latestPropertyDTOs = latestPropertiesPage.getContent().stream()
-                    .map(this::convertToDTO)
+                    .map(propertyMapper::PropertyConvertToDTO)
                     .collect(Collectors.toList());
 
-            return new ResponseDTO<>(200, latestPropertyDTOs);
+            return new ResponseDTO<>(latestPropertyDTOs);
         }
 
         // 使用者的行為記錄，累計推薦分數
@@ -62,16 +60,17 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             // 統計每種類型的出現次數
             propertyTypeCount.put(propertyType, propertyTypeCount.getOrDefault(propertyType, 0) + 1);
-
+            log.info("Property type count: " + propertyTypeCount);
             viewedDistricts.add(property.getDistrict().getDistrictName());
             viewedCities.add(property.getCity().getCityName());
             avgPrice += property.getPrice();
 
-            // 基於行為類型進行加權
+            // 基於行為進行加權
             int score = calculateScoreForAction(actionItem);
             propertyScore.put(propertyId, propertyScore.getOrDefault(propertyId, 0) + score);
-        }
 
+        }
+        log.info("Property score: " + propertyScore);
 
         // 計算平均價格，並設置價格範圍
         avgPrice /= userActions.size();
@@ -111,7 +110,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         Page<Property> recommendedPropertiesPage = propertyRepository.findByIdIn(sortedPropertyIds, pageable);
         List<Property> recommendedProperties = recommendedPropertiesPage.getContent();
 
-        // 如果推薦結果不足10個，補充熱門房源
+        // 如果推薦結果不足10個，補充房源
         if (recommendedProperties.size() < 10) {
             List<Property> additionalProperties = propertyRepository
                     .findTop10ByPriceBetweenOrderByCreatedAtDesc(priceLowerBound, priceUpperBound, pageable)
@@ -125,10 +124,10 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         // 將推薦結果轉換成 DTO 並返回
         List<PropertyDTO> propertyDTOs = recommendedProperties.stream()
-                .map(this::convertToDTO)
+                .map(propertyMapper::PropertyConvertToDTO)
                 .collect(Collectors.toList());
 
-        return new ResponseDTO<>(200, propertyDTOs);
+        return new ResponseDTO<>(propertyDTOs);
     }
 
     private int calculateScoreForAction(UserAction action) {
@@ -139,38 +138,6 @@ public class RecommendationServiceImpl implements RecommendationService {
             case "CONTACT" -> 10;
             default -> 0;
         };
-    }
-
-    public PropertyDTO convertToDTO(Property property) {
-        PropertyDTO propertyDTO = new PropertyDTO();
-        propertyDTO.setId(property.getId());
-        propertyDTO.setTitle(property.getTitle());
-        propertyDTO.setCityName(property.getCity().getCityName());
-        propertyDTO.setDistrictName(property.getDistrict().getDistrictName());
-        propertyDTO.setRoadName(property.getRoad().getRoadName());
-        propertyDTO.setAddress(property.getAddress());
-        propertyDTO.setPrice(property.getPrice());
-        propertyDTO.setPropertyType(property.getPropertyType());
-        propertyDTO.setBuildingType(property.getBuildingType());
-        propertyDTO.setArea(property.getArea());
-        propertyDTO.setFloor(property.getFloor());
-        propertyDTO.setStatus(property.getStatus());
-        propertyDTO.setMainImage(property.getMainImage());
-        propertyDTO.setCreatedAt(property.getCreatedAt());
-
-        // 查詢 PropertyLayout 並設置到 DTO 中
-        PropertyLayout propertyLayout = propertyLayoutRepository.findByProperty(property);
-        if (propertyLayout != null) {
-            PropertyLayoutDTO layoutDTO = new PropertyLayoutDTO();
-            layoutDTO.setLivingRoomCount(propertyLayout.getLivingRoomCount());
-            layoutDTO.setBathroomCount(propertyLayout.getBathroomCount());
-            layoutDTO.setBalconyCount(propertyLayout.getBalconyCount());
-            layoutDTO.setKitchenCount(propertyLayout.getKitchenCount());
-
-            propertyDTO.setPropertyLayout(layoutDTO);
-        }
-
-        return propertyDTO;
     }
 }
 

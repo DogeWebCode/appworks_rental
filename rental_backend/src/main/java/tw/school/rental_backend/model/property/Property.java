@@ -5,10 +5,14 @@ import lombok.Data;
 import tw.school.rental_backend.model.location.City;
 import tw.school.rental_backend.model.location.District;
 import tw.school.rental_backend.model.location.Road;
+import tw.school.rental_backend.model.property.facility.PropertyFacility;
+import tw.school.rental_backend.model.property.feature.PropertyFeature;
+import tw.school.rental_backend.model.property.image.PropertyImage;
 import tw.school.rental_backend.model.user.User;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Entity
@@ -84,6 +88,15 @@ public class Property {
 
     @Column(name = "longitude", nullable = false)
     private BigDecimal longitude;
+
+    @OneToMany(mappedBy = "property")
+    private Set<PropertyFacility> facility;  // 設備關聯
+
+    @OneToMany(mappedBy = "property")
+    private Set<PropertyImage> image;  // 圖片關聯
+
+    @OneToMany(mappedBy = "property")
+    private Set<PropertyFeature> feature;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

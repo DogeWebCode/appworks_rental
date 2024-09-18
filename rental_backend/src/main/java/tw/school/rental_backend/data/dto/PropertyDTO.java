@@ -3,8 +3,6 @@ package tw.school.rental_backend.data.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import tw.school.rental_backend.model.property.Property;
-import tw.school.rental_backend.model.property.PropertyLayout;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

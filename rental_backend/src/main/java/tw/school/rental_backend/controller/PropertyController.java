@@ -1,6 +1,7 @@
 package tw.school.rental_backend.controller;
 
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.ResponseDTO;
 import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.user.User;
+import tw.school.rental_backend.service.PropertyService;
 import tw.school.rental_backend.service.RecommendationService;
 import tw.school.rental_backend.service.UserService;
 
@@ -22,12 +24,49 @@ import java.util.List;
 public class PropertyController {
 
     private final RecommendationService recommendationService;
+    private final PropertyService propertyService;
     private final UserService userService;
 
 
-    public PropertyController(RecommendationService recommendationService, UserService userService) {
+    public PropertyController(RecommendationService recommendationService, UserService userService, PropertyService propertyService) {
         this.recommendationService = recommendationService;
         this.userService = userService;
+        this.propertyService = propertyService;
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> filterProperties(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String road,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) String[] feature,
+            @RequestParam(required = false) String[] facility,
+            @PageableDefault() Pageable pageable) {
+
+        try {
+            // 這裡 return Page<PropertyDTO>
+            Page<PropertyDTO> propertyPage = propertyService.filterProperties(
+                    city, district, road, minPrice, maxPrice, feature, facility, pageable);
+
+            // 拿資料
+            List<PropertyDTO> propertyDTOs = propertyPage.getContent();
+
+            // 判斷是否有下一頁
+            Integer nextPage = propertyPage.hasNext() ? propertyPage.getNumber() + 1 : null;
+
+            ResponseDTO<List<PropertyDTO>> response = new ResponseDTO<>(propertyDTOs);
+
+            if (nextPage != null) {
+                response.setNextPage(nextPage.toString());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("篩選功能發生錯誤：{}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("篩選失敗"));
+        }
     }
 
     @GetMapping("/recommendation")
