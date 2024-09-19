@@ -1,10 +1,13 @@
 package tw.school.rental_backend.service.Impl;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.data.dto.PropertyDTO;
+import tw.school.rental_backend.data.dto.PropertyDetailDTO;
+import tw.school.rental_backend.mapper.PropertyDetailMapper;
 import tw.school.rental_backend.mapper.PropertyMapper;
 import tw.school.rental_backend.model.property.Property;
 import tw.school.rental_backend.repository.jpa.property.PropertyRepository;
@@ -15,10 +18,12 @@ public class PropertyServiceImpl implements PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final PropertyMapper propertyMapper;
+    private final PropertyDetailMapper propertyDetailMapper;
 
-    public PropertyServiceImpl(PropertyRepository propertyRepository, PropertyMapper propertyMapper) {
+    public PropertyServiceImpl(PropertyRepository propertyRepository, PropertyMapper propertyMapper, PropertyDetailMapper propertyDetailMapper) {
         this.propertyRepository = propertyRepository;
         this.propertyMapper = propertyMapper;
+        this.propertyDetailMapper = propertyDetailMapper;
     }
 
     @Override
@@ -64,6 +69,13 @@ public class PropertyServiceImpl implements PropertyService {
 
         // 將 Property 轉換為 PropertyDTO
         return filteredPropertiesPage.map(propertyMapper::PropertyConvertToDTO);
+    }
+
+    @Override
+    @Transactional
+    public PropertyDetailDTO getPropertyDetail(Long propertyId) {
+        Property property = propertyRepository.findById(propertyId).orElseThrow(() -> new RuntimeException("房源不存在"));
+        return propertyDetailMapper.PropertyConvertToDetailDTO(property);
     }
 }
 

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.PropertyDTO;
+import tw.school.rental_backend.data.dto.PropertyDetailDTO;
 import tw.school.rental_backend.data.dto.ResponseDTO;
 import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.user.User;
@@ -35,7 +36,7 @@ public class PropertyController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<?> filterProperties(
+    public ResponseEntity<?> searchProperties(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String district,
             @RequestParam(required = false) String road,
@@ -81,5 +82,11 @@ public class PropertyController {
             log.error("推薦系統發生錯誤：{}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("推薦失敗"));
         }
+    }
+
+    @GetMapping("/detail/{propertyId}")
+    public ResponseEntity<?> getPropertyDetail(@PathVariable Long propertyId) {
+        PropertyDetailDTO propertyDetail = propertyService.getPropertyDetail(propertyId);
+        return ResponseEntity.ok(propertyDetail);
     }
 }

@@ -1,11 +1,15 @@
 package tw.school.rental_backend.mapper;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyLayoutDTO;
 import tw.school.rental_backend.model.property.Property;
 import tw.school.rental_backend.model.property.PropertyLayout;
 import tw.school.rental_backend.repository.jpa.property.PropertyLayoutRepository;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class PropertyMapper {
@@ -16,6 +20,7 @@ public class PropertyMapper {
         this.propertyLayoutRepository = propertyLayoutRepository;
     }
 
+    @Transactional
     public PropertyDTO PropertyConvertToDTO(Property property) {
         PropertyDTO propertyDTO = new PropertyDTO();
         propertyDTO.setId(property.getId());
@@ -46,6 +51,12 @@ public class PropertyMapper {
 
             propertyDTO.setPropertyLayout(layoutDTO);
         }
+
+        List<String> features = property.getFeature().stream()
+                .map(propertyFeature -> propertyFeature.getFeature().getFeatureName())
+                .collect(Collectors.toList());
+        propertyDTO.setFeatures(features);
+
         return propertyDTO;
     }
 }

@@ -58,7 +58,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login", "/api/health/**","/api/property/filter").permitAll()
+                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login", "/api/health/**", "/api/property/search","/api/property/detail/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptionHandling -> exceptionHandling

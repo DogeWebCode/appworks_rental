@@ -12,6 +12,7 @@ import tw.school.rental_backend.model.user.User;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -90,13 +91,13 @@ public class Property {
     private BigDecimal longitude;
 
     @OneToMany(mappedBy = "property")
-    private Set<PropertyFacility> facility;  // 設備關聯
+    private List<PropertyFacility> facility;  // 設備關聯
 
     @OneToMany(mappedBy = "property")
-    private Set<PropertyImage> image;  // 圖片關聯
+    private List<PropertyImage> image;  // 圖片關聯
 
-    @OneToMany(mappedBy = "property")
-    private Set<PropertyFeature> feature;
+    @OneToMany(mappedBy = "property", fetch = FetchType.EAGER)
+    private List<PropertyFeature> feature;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

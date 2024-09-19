@@ -3,6 +3,7 @@ package tw.school.rental_backend.service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import tw.school.rental_backend.data.dto.PropertyDTO;
+import tw.school.rental_backend.data.dto.PropertyDetailDTO;
 
 public interface PropertyService {
 
@@ -10,4 +11,6 @@ public interface PropertyService {
                                        Integer minPrice, Integer maxPrice,
                                        String[] features, String[] equipment,
                                        Pageable pageable);
+
+    PropertyDetailDTO getPropertyDetail(Long propertyId);
 }

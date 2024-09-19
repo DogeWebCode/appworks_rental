@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -26,4 +27,5 @@ public class PropertyDTO {
     private String mainImage;
     private LocalDateTime createdAt;
     private PropertyLayoutDTO propertyLayout;
+    private List<String> features;
 }
