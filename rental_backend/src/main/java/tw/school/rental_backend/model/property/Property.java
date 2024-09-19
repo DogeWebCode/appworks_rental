@@ -2,9 +2,9 @@ package tw.school.rental_backend.model.property;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import tw.school.rental_backend.model.location.City;
-import tw.school.rental_backend.model.location.District;
-import tw.school.rental_backend.model.location.Road;
+import tw.school.rental_backend.model.geo.City;
+import tw.school.rental_backend.model.geo.District;
+import tw.school.rental_backend.model.geo.Road;
 import tw.school.rental_backend.model.property.facility.PropertyFacility;
 import tw.school.rental_backend.model.property.feature.PropertyFeature;
 import tw.school.rental_backend.model.property.image.PropertyImage;
@@ -13,7 +13,6 @@ import tw.school.rental_backend.model.user.User;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @Entity

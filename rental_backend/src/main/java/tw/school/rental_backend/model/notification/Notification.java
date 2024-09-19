@@ -2,8 +2,8 @@ package tw.school.rental_backend.model.notification;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import tw.school.rental_backend.model.location.City;
-import tw.school.rental_backend.model.location.District;
+import tw.school.rental_backend.model.geo.City;
+import tw.school.rental_backend.model.geo.District;
 import tw.school.rental_backend.model.user.User;
 
 import java.time.LocalDateTime;

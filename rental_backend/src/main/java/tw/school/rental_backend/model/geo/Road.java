@@ -1,4 +1,4 @@
-package tw.school.rental_backend.model.location;
+package tw.school.rental_backend.model.geo;
 
 import jakarta.persistence.*;
 import lombok.Data;
