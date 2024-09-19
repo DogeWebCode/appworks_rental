@@ -7,10 +7,13 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyDetailDTO;
 import tw.school.rental_backend.data.dto.ResponseDTO;
+import tw.school.rental_backend.data.dto.form.PropertyForm;
 import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.user.User;
 import tw.school.rental_backend.service.PropertyService;
@@ -88,5 +91,33 @@ public class PropertyController {
     public ResponseEntity<?> getPropertyDetail(@PathVariable Long propertyId) {
         PropertyDetailDTO propertyDetail = propertyService.getPropertyDetail(propertyId);
         return ResponseEntity.ok(propertyDetail);
+    }
+
+    @PostMapping(path = "/create", consumes = {"multipart/form-data"})
+    public ResponseEntity<String> createProperty(@ModelAttribute PropertyForm propertyForm) {
+        // 獲取當前使用者
+        String username = getCurrentUserUsername();
+
+        // 通過使用者名稱獲取使用者對象
+        User user = userService.findByUsername(username);
+
+        // 設置 userId 到 PropertyForm 中
+        propertyForm.setUserId(user.getId());
+
+        // 創建房源
+        propertyService.createProperty(propertyForm);
+
+        return new ResponseEntity<>("Property created successfully!", HttpStatus.CREATED);
+    }
+
+    // TODO : 挪方法到 Service
+    // 獲取當前登入的使用者名稱
+    private String getCurrentUserUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        } else {
+            return principal.toString();
+        }
     }
 }

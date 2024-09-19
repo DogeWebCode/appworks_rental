@@ -44,6 +44,7 @@ public class PropertyMapper {
         PropertyLayout propertyLayout = propertyLayoutRepository.findByProperty(property);
         if (propertyLayout != null) {
             PropertyLayoutDTO layoutDTO = new PropertyLayoutDTO();
+            layoutDTO.setRoomCount(propertyLayout.getRoomCount());
             layoutDTO.setLivingRoomCount(propertyLayout.getLivingRoomCount());
             layoutDTO.setBathroomCount(propertyLayout.getBathroomCount());
             layoutDTO.setBalconyCount(propertyLayout.getBalconyCount());

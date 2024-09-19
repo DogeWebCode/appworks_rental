@@ -2,10 +2,14 @@ package tw.school.rental_backend.model.property.facility;
 
 import jakarta.persistence.*;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import tw.school.rental_backend.model.property.Property;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(name = "property_facility")
 @IdClass(PropertyFacilityId.class)
@@ -20,4 +24,5 @@ public class PropertyFacility {
     @ManyToOne
     @JoinColumn(name = "facility_id", nullable = false)
     private Facility facility;
+
 }

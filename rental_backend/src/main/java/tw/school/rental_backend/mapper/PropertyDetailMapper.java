@@ -52,6 +52,7 @@ public class PropertyDetailMapper {
         PropertyLayout propertyLayout = propertyLayoutRepository.findByProperty(property);
         if (propertyLayout != null) {
             PropertyLayoutDTO layoutDTO = new PropertyLayoutDTO();
+            layoutDTO.setRoomCount(propertyLayout.getRoomCount());
             layoutDTO.setLivingRoomCount(propertyLayout.getLivingRoomCount());
             layoutDTO.setBathroomCount(propertyLayout.getBathroomCount());
             layoutDTO.setBalconyCount(propertyLayout.getBalconyCount());
@@ -60,11 +61,13 @@ public class PropertyDetailMapper {
             detailDTO.setPropertyLayout(layoutDTO);
         }
 
+        // 設置特色
         List<String> features = property.getFeature().stream()
                 .map(propertyFeature -> propertyFeature.getFeature().getFeatureName())
                 .collect(Collectors.toList());
         detailDTO.setFeatures(features);
 
+        // 設置設備
         List<String> facilities = property.getFacility().stream()
                 .map(facility -> facility.getFacility().getFacilityName())
                 .collect(Collectors.toList());
@@ -75,7 +78,7 @@ public class PropertyDetailMapper {
                 .collect(Collectors.toList());
         detailDTO.setImages(imageUrls);
 
-        // 初始化 LandlordInfoDTO 並設置房東資料
+        // 房東資料
         LandlordInfoDTO landlordInfo = new LandlordInfoDTO();
         landlordInfo.setId(property.getUser().getId());
         landlordInfo.setUsername(property.getUser().getUsername());
@@ -83,7 +86,7 @@ public class PropertyDetailMapper {
         landlordInfo.setMobilePhone(property.getUser().getMobilePhone());
         landlordInfo.setPicture(property.getUser().getPicture());
 
-        detailDTO.setLandlordInfo(landlordInfo);  // 設置房東信息到 DTO 中
+        detailDTO.setLandlordInfo(landlordInfo);
 
         return detailDTO;
     }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PropertyLayoutDTO {
+    private int roomCount;
     private int livingRoomCount;
     private int bathroomCount;
     private int balconyCount;
