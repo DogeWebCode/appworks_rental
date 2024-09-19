@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
-        return jwtTokenProvider.createToken(username, user.getRole());
+        return jwtTokenProvider.createToken(user.getId(),username, user.getRole());
     }
 
     public User findByUsername(String username) {

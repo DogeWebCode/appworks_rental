@@ -36,13 +36,14 @@ public class JwtTokenProvider {
     }
 
     // 生成 JWT Token
-    public String createToken(String username, String role) {
+    public String createToken(Long userId, String username, String role) {
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
         return Jwts.builder()
                 .setSubject(username) // 直接設置 Subject (用戶名)
-                .claim("role", role)  // 設置 Claims 中的其他自定義屬性
+                .claim("userId", userId)
+                .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(validity)
                 .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
@@ -88,5 +89,15 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    // 從 Token 中提取 userId
+    public Long getUserId(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", Long.class);
     }
 }

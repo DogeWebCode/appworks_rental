@@ -89,7 +89,7 @@ public class Property {
     @Column(name = "longitude", nullable = false)
     private BigDecimal longitude;
 
-    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     private List<PropertyFacility> facility;  // 設備關聯
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
