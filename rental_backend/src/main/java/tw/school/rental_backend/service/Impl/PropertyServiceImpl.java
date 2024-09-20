@@ -237,5 +237,11 @@ public class PropertyServiceImpl implements PropertyService {
         // 保存 property 到資料庫
         propertyRepository.save(property);
     }
+
+    @Override
+    public Property getPropertyById(Long propertyId) {
+        return propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new RuntimeException("找不到房源"));
+    }
 }
 

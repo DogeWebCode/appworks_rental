@@ -170,7 +170,7 @@ const ChatRoom = ({ token, currentUserId }) => {
   }, [targetUserId]);
 
   useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws?token=" + token);
+    const socket = new SockJS("https://goodshiba.com/ws?token=" + token);
     stompClient.current = Stomp.over(socket); // 使用 Stomp 包裝 SockJS
 
     stompClient.current.connect(

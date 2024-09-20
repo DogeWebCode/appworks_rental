@@ -1,7 +1,9 @@
 package tw.school.rental_backend.model.property;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import tw.school.rental_backend.model.geo.City;
 import tw.school.rental_backend.model.geo.District;
 import tw.school.rental_backend.model.geo.Road;
@@ -17,6 +19,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "property")
+@ToString(exclude = {"facility"})
 public class Property {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -74,7 +77,7 @@ public class Property {
     @Column(name = "total_floor", nullable = false)
     private Integer totalFloor;
 
-    @Column(name = "lessor", nullable = true)
+    @Column(name = "lessor")
     private String lessor;
 
     @Column(name = "status", nullable = false)
@@ -90,6 +93,7 @@ public class Property {
     private BigDecimal longitude;
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
+    @JsonManagedReference
     private List<PropertyFacility> facility;  // 設備關聯
 
     @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)

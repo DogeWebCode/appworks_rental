@@ -20,6 +20,7 @@ public class PropertyFacility {
     @Id
     @ManyToOne
     @JoinColumn(name = "property_id", nullable = false)
+    @JsonBackReference
     private Property property;
 
     @Id
