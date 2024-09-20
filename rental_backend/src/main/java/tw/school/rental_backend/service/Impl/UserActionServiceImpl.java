@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tw.school.rental_backend.data.dto.UserActionDTO;
 import tw.school.rental_backend.model.property.Property;
 import tw.school.rental_backend.model.user.User;
@@ -103,6 +104,7 @@ public class UserActionServiceImpl implements UserActionService {
 
     // 使用者取消收藏時要刪除
     @Override
+    @Transactional
     public void removeFavoriteAction(Long userId, Long propertyId) {
         userActionRepository.deleteByUserIdAndPropertyIdAndActionType(userId, propertyId, "favorite");
     }
