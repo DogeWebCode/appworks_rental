@@ -2,14 +2,10 @@ package tw.school.rental_backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.FavoriteDTO;
-import tw.school.rental_backend.data.dto.ResponseDTO;
+import tw.school.rental_backend.data.dto.PropertyResponseDTO;
 import tw.school.rental_backend.middleware.JwtTokenProvider;
-import tw.school.rental_backend.model.user.Favorite;
 import tw.school.rental_backend.service.FavoriteService;
 
 import java.util.List;
@@ -40,7 +36,7 @@ public class FavoriteController {
         String token = jwtTokenProvider.resolveToken(request);
         Long userId = jwtTokenProvider.getUserId(token);
         List<FavoriteDTO> favoriteList = favoriteService.getFavoritesByUserId(userId);
-        ResponseDTO<List<FavoriteDTO>> response = new ResponseDTO<>(favoriteList);
+        PropertyResponseDTO<List<FavoriteDTO>> response = new PropertyResponseDTO<>(favoriteList);
         return ResponseEntity.ok(response);
     }
 

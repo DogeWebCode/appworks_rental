@@ -1,6 +1,5 @@
 package tw.school.rental_backend.service.Impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tw.school.rental_backend.data.dto.FavoriteDTO;

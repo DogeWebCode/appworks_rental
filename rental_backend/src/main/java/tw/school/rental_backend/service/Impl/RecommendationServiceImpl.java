@@ -5,7 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.data.dto.PropertyDTO;
-import tw.school.rental_backend.data.dto.ResponseDTO;
+import tw.school.rental_backend.data.dto.PropertyResponseDTO;
 import tw.school.rental_backend.mapper.PropertyMapper;
 import tw.school.rental_backend.model.property.Property;
 import tw.school.rental_backend.model.user.UserAction;
@@ -31,7 +31,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     @Override
-    public ResponseDTO<List<PropertyDTO>> recommendPropertyForUser(Long userId, Pageable pageable) {
+    public PropertyResponseDTO<List<PropertyDTO>> recommendPropertyForUser(Long userId, Pageable pageable) {
         // 獲取使用者行為記錄
         List<UserAction> userActions = userActionRepository.findByUserId(userId);
 
@@ -42,7 +42,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     .map(propertyMapper::PropertyConvertToDTO)
                     .collect(Collectors.toList());
 
-            return new ResponseDTO<>(latestPropertyDTOs);
+            return new PropertyResponseDTO<>(latestPropertyDTOs);
         }
 
         // 使用者的行為記錄，累計推薦分數
@@ -127,7 +127,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .map(propertyMapper::PropertyConvertToDTO)
                 .collect(Collectors.toList());
 
-        return new ResponseDTO<>(propertyDTOs);
+        return new PropertyResponseDTO<>(propertyDTOs);
     }
 
     private int calculateScoreForAction(UserAction action) {

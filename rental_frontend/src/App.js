@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import LoginForm from "./components/LoginForm";
+import MainPage from "./components/MainPage";
 import ChatRoom from "./components/ChatRoom";
 import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
 
@@ -30,7 +31,8 @@ function App() {
           onLogout={handleLogout}
         />
       ) : (
-        <LoginForm onLogin={handleLogin} />
+        <MainPage />
+        // <LoginForm onLogin={handleLogin} />
       )}
     </div>
   );

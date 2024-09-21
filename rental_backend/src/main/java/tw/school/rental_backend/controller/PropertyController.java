@@ -12,7 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyDetailDTO;
-import tw.school.rental_backend.data.dto.ResponseDTO;
+import tw.school.rental_backend.data.dto.PropertyResponseDTO;
 import tw.school.rental_backend.data.dto.form.PropertyForm;
 import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.user.User;
@@ -47,7 +47,7 @@ public class PropertyController {
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) String[] feature,
             @RequestParam(required = false) String[] facility,
-            @PageableDefault() Pageable pageable) {
+            @PageableDefault(sort = "id", size = 12) Pageable pageable) {
 
         try {
             // 這裡 return Page<PropertyDTO>
@@ -60,7 +60,13 @@ public class PropertyController {
             // 判斷是否有下一頁
             Integer nextPage = propertyPage.hasNext() ? propertyPage.getNumber() + 1 : null;
 
-            ResponseDTO<List<PropertyDTO>> response = new ResponseDTO<>(propertyDTOs);
+            // 設置總頁數和總共有多少筆資料
+            long totalElements = propertyPage.getTotalElements();
+            int totalPages = propertyPage.getTotalPages();
+
+            PropertyResponseDTO<List<PropertyDTO>> response = new PropertyResponseDTO<>(propertyDTOs);
+            response.setTotalElements(totalElements);
+            response.setTotalPages(totalPages);
 
             if (nextPage != null) {
                 response.setNextPage(nextPage.toString());
@@ -79,7 +85,7 @@ public class PropertyController {
             String username = authentication.getName();
             User user = userService.findByUsername(username);
 
-            ResponseDTO<List<PropertyDTO>> recommendProperty = recommendationService.recommendPropertyForUser(user.getId(), pageable);
+            PropertyResponseDTO<List<PropertyDTO>> recommendProperty = recommendationService.recommendPropertyForUser(user.getId(), pageable);
             return ResponseEntity.ok(recommendProperty);
         } catch (RuntimeException e) {
             log.error("推薦系統發生錯誤：{}", e.getMessage());
