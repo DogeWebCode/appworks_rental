@@ -1,12 +1,12 @@
-// src/components/LoginForm.js
 import React, { useState } from "react";
-import { TextField, Button, Box } from "@mui/material";
+import { Form, Input, Button, Modal } from "antd";
 
-const LoginForm = ({ onLogin }) => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+const LoginForm = ({ visible, onClose, onLogin }) => {
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (values) => {
+    const { username, password } = values;
+    setLoading(true);
     try {
       const response = await fetch("/api/user/login", {
         method: "POST",
@@ -20,41 +20,43 @@ const LoginForm = ({ onLogin }) => {
         const token = await response.text();
         localStorage.setItem("jwtToken", token);
         onLogin(token); // 傳遞 token 到上層
+        onClose(); // 關閉 Modal
       } else {
         console.error("Login failed");
       }
     } catch (error) {
       console.error("Error during login:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Box sx={{ width: "300px", margin: "auto", mt: 5 }}>
-      <TextField
-        label="帳號"
-        fullWidth
-        variant="outlined"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <TextField
-        label="密碼"
-        type="password"
-        fullWidth
-        variant="outlined"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        sx={{ marginTop: 2 }}
-      />
-      <Button
-        variant="contained"
-        fullWidth
-        onClick={handleSubmit}
-        sx={{ marginTop: 2 }}
-      >
-        登入
-      </Button>
-    </Box>
+    <Modal title="登入" visible={visible} onCancel={onClose} footer={null}>
+      <Form layout="vertical" onFinish={handleSubmit}>
+        <Form.Item
+          label="帳號"
+          name="username"
+          rules={[{ required: true, message: "請輸入帳號!" }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Form.Item
+          label="密碼"
+          name="password"
+          rules={[{ required: true, message: "請輸入密碼!" }]}
+        >
+          <Input.Password />
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={loading} block>
+            登入
+          </Button>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 

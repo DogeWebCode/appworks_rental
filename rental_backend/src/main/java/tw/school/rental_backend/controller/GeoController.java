@@ -25,8 +25,8 @@ public class GeoController {
 
     @GetMapping("/city")
     public ResponseEntity<?> getCity() {
-        List<City> cities = geoService.findAllCities();
-        DataResponseDTO<List<City>> response = new DataResponseDTO<>(cities);
+        List<City> city = geoService.findAllCities();
+        DataResponseDTO<List<City>> response = new DataResponseDTO<>(city);
         return ResponseEntity.ok(response);
     }
 
@@ -38,8 +38,8 @@ public class GeoController {
     }
 
     @GetMapping("/road")
-    public ResponseEntity<?> getRoad(@RequestParam String districtName) {
-        List<RoadDTO> roadDTO = geoService.findRoadsByDistrict(districtName);
+    public ResponseEntity<?> getRoad(@RequestParam String districtName, @RequestParam String cityName) {
+        List<RoadDTO> roadDTO = geoService.findRoadsByDistrict(districtName, cityName);
         DataResponseDTO<List<RoadDTO>> response = new DataResponseDTO<>(roadDTO);
         return ResponseEntity.ok(response);
     }

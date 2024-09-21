@@ -11,5 +11,5 @@ public interface GeoService {
 
     List<DistrictDTO> findDistrictsByCity(String cityName);
 
-    List<RoadDTO> findRoadsByDistrict(String districtName);
+    List<RoadDTO> findRoadsByDistrict(String districtName, String cityName);
 }

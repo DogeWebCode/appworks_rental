@@ -43,9 +43,14 @@ public class GeoServiceImpl implements GeoService {
     }
 
     @Override
-    public List<RoadDTO> findRoadsByDistrict(String districtName) {
-        District district = districtRepository.findByDistrictName(districtName)
+    public List<RoadDTO> findRoadsByDistrict(String districtName, String cityName) {
+
+        City city = cityRepository.findByCityName(cityName)
+                .orElseThrow(() -> new RuntimeException("查無此城市"));
+
+        District district = districtRepository.findByDistrictNameAndCity(districtName, city)
                 .orElseThrow(() -> new RuntimeException("查無此區域"));
+
         List<Road> roads = roadRepository.findByDistrict(district);
         return roads.stream()
                 .map(road -> new RoadDTO(road.getId(), road.getRoadName()))
