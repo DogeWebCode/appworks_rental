@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Layout,
   Button,
@@ -39,6 +39,10 @@ const HeaderComponent = ({
     navigate("/");
   };
 
+  const handleFavoriteClick = () => {
+    navigate("/favorites");
+  };
+
   const handleSubmit = async (values) => {
     const { email, password } = values;
     setLoading(true);
@@ -70,29 +74,50 @@ const HeaderComponent = ({
 
   return (
     <>
-      <Header style={{ background: "#fff", padding: 0 }}>
+      <Header
+        style={{
+          background: "#fff",
+          padding: 0,
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          zIndex: 1000,
+          position: "relative",
+          borderBottom: "2px solid #f0f0f0",
+        }}
+      >
         <div
           style={{
-            width: "100%",
+            width: "98%",
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+            alignItems: "center",
+            padding: "0 16px",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
             borderRadius: "8px",
-            borderBottom: "2px solid #f0f0f0",
+            background: "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)", // 背景漸變
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
             <Avatar
               src="/shiba-logo.png"
               size="large"
-              style={{ marginRight: 8, cursor: "pointer" }}
+              style={{
+                marginRight: 8,
+                cursor: "pointer",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
               onClick={handleLogoClick}
             />
             <Title
               level={3}
-              style={{ margin: 0, cursor: "pointer" }}
-              onClick={handleLogoClick} // 點擊事件
+              style={{
+                margin: 0,
+                cursor: "pointer",
+                color: "#333",
+                textShadow: "1px 1px 3px rgba(0, 0, 0, 0.2)",
+                fontFamily: "system-ui",
+              }}
+              onClick={handleLogoClick}
             >
               柴好租
             </Title>
@@ -100,11 +125,19 @@ const HeaderComponent = ({
           <div>
             {token ? (
               <>
-                <span style={{ marginRight: 20 }}>
+                <span style={{ marginRight: 20, fontFamily: "system-ui" }}>
                   歡迎回來，{currentUserId}
                 </span>
-                <Button type="link">個人資料</Button>
-                <Button type="link">房源收藏夾</Button>
+                <Button type="link" style={{ fontFamily: "system-ui" }}>
+                  個人資料
+                </Button>
+                <Button
+                  type="link"
+                  style={{ fontFamily: "system-ui" }}
+                  onClick={handleFavoriteClick}
+                >
+                  房源收藏夾
+                </Button>
                 <Button
                   type="primary"
                   icon={<LogoutOutlined />}

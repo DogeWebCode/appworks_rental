@@ -1,6 +1,15 @@
-import React, { useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Layout, Typography, Button, Row, Col, Card, Modal } from "antd";
+import {
+  Layout,
+  Typography,
+  Button,
+  Row,
+  Col,
+  Card,
+  Modal,
+  message,
+} from "antd";
 import {
   EnvironmentOutlined,
   HomeOutlined,
@@ -13,6 +22,8 @@ import {
   AppstoreOutlined,
   ApartmentOutlined,
   LeftOutlined,
+  HeartOutlined,
+  HeartFilled,
 } from "@ant-design/icons";
 import Lightbox from "yet-another-react-lightbox";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
@@ -33,9 +44,10 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchPropertyDetail = async () => {
       try {
         const [propertyRes, facilityRes, featureRes] = await Promise.all([
@@ -60,6 +72,40 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
 
     fetchPropertyDetail();
   }, [propertyId]);
+
+  useEffect(() => {
+    if (!token) return;
+    // 檢查該房源是否已經被用戶收藏
+    const fetchFavorites = async () => {
+      try {
+        const response = await fetch("/api/favorite", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        // 檢查當前的 propertyId 是否在收藏清單中
+        if (
+          data.data &&
+          data.data.some(
+            (favorite) => favorite.propertyId === Number(propertyId)
+          )
+        ) {
+          setIsFavorite(true); // 已收藏
+        } else {
+          setIsFavorite(false); // 未收藏
+        }
+      } catch (error) {
+        console.error("Error fetching favorites:", error);
+        message.error("無法檢查收藏狀態");
+      }
+    };
+
+    fetchFavorites();
+  }, [propertyId, token]);
 
   const renderFacilities = useCallback(() => {
     return (
@@ -133,6 +179,36 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
       setShowChatModal(true); // 有登入，跳聊天室
     } else {
       setIsLoginModalVisible(true); // 沒登入，跳登入表單
+    }
+  };
+
+  const handleFavoriteClick = () => {
+    if (token) {
+      handleFavorite();
+    } else {
+      setIsLoginModalVisible(true);
+    }
+  };
+
+  const handleFavorite = async () => {
+    try {
+      const method = isFavorite ? "DELETE" : "POST"; // 已收藏則刪除，否則新增
+      const response = await fetch(`/api/favorite/${propertyId}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("操作失敗");
+      }
+
+      setIsFavorite(!isFavorite); // 切換收藏狀態
+      message.success(isFavorite ? "已取消收藏" : "成功加入收藏");
+    } catch (error) {
+      console.error("Error updating favorite status:", error);
+      message.error("操作失敗，請稍後再試");
     }
   };
 
@@ -218,6 +294,19 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
             </div>
           </Col>
           <Col span={8}>
+            <Button
+              type="text"
+              icon={
+                isFavorite ? (
+                  <HeartFilled style={{ color: "red" }} />
+                ) : (
+                  <HeartOutlined />
+                )
+              }
+              onClick={handleFavoriteClick}
+            >
+              {isFavorite ? "已加入收藏夾" : "加入收藏夾"}
+            </Button>
             <Title level={3}>{property.title}</Title>
             <Text>
               <EnvironmentOutlined />{" "}
@@ -294,17 +383,17 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
         </Row>
 
         <div style={{ marginTop: 24 }}>
-          <Title level={4}>房源描述</Title>
-          <Paragraph>{property.description}</Paragraph>
+          <Title level={3}>房源描述</Title>
+          <Paragraph strong={true}>{property.description}</Paragraph>
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <Title level={4}>設施</Title>
+          <Title level={3}>設施與傢俱</Title>
           {renderFacilities()}
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <Title level={4}>特色</Title>
+          <Title level={3}>特色</Title>
           {renderFeatures()}
         </div>
 

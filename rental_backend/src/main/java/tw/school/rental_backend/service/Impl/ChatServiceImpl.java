@@ -29,7 +29,7 @@ public class ChatServiceImpl implements ChatService {
         chatMessage.setTimestamp(LocalDateTime.now());
         chatMessageRepository.save(chatMessage);
 
-        // 保存後獲取最新的聊天夥伴列表並推送給所有人
+        // 保存後獲取最新的聊天對象並推送給所有人
         List<String> updatedChatPartners = getChatPartners(chatMessage.getSenderId());
         messagingTemplate.convertAndSend("/topic/chat/partners", updatedChatPartners);
     }

@@ -47,7 +47,7 @@ public class PropertyController {
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) String[] feature,
             @RequestParam(required = false) String[] facility,
-            @PageableDefault(sort = "id", size = 12) Pageable pageable) {
+            @PageableDefault(sort = "createdAt", size = 12) Pageable pageable) {
 
         try {
             // 這裡 return Page<PropertyDTO>
@@ -80,7 +80,7 @@ public class PropertyController {
     }
 
     @GetMapping("/recommendation")
-    public ResponseEntity<?> getRecommendation(Authentication authentication, @PageableDefault() Pageable pageable) {
+    public ResponseEntity<?> getRecommendation(Authentication authentication, @PageableDefault(sort = "createdAt", size = 12) Pageable pageable) {
         try {
             String username = authentication.getName();
             User user = userService.findByUsername(username);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Empty,
   InputNumber,
@@ -12,14 +12,14 @@ import {
   Pagination,
   Select,
 } from "antd";
-import { ReloadOutlined, SmileOutlined } from "@ant-design/icons";
+import { ReloadOutlined, SmileOutlined, HomeOutlined } from "@ant-design/icons";
 import MainLayout from "./layout/MainLayout";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-const HomePage = () => {
+const HomePage = ({ token, setIsLoginModalVisible }) => {
   const [properties, setProperties] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [cities, setCities] = useState([]);
@@ -29,6 +29,12 @@ const HomePage = () => {
   const [features, setFeatures] = useState([]);
 
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const isRecommendationFromParams =
+    searchParams.get("isRecommendation") === "true";
+  const [isRecommendation, setIsRecommendation] = useState(
+    isRecommendationFromParams
+  );
 
   const [selectedCity, setSelectedCity] = useState(
     searchParams.get("city") || null
@@ -58,21 +64,32 @@ const HomePage = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const queryParams = new URLSearchParams(searchParams);
-
-        const response = await fetch(
-          `/api/property/search?${queryParams.toString()}`
-        );
-        const data = await response.json();
-        setProperties(data.data);
-        setTotalElements(data.totalElements);
+        if (isRecommendation) {
+          const response = await fetch("/api/property/recommendation", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const data = await response.json();
+          setProperties(data.data);
+          setTotalElements(data.totalElements);
+        } else {
+          // 普通房源搜索
+          const queryParams = new URLSearchParams(searchParams);
+          const response = await fetch(
+            `/api/property/search?${queryParams.toString()}`
+          );
+          const data = await response.json();
+          setProperties(data.data);
+          setTotalElements(data.totalElements);
+        }
       } catch (error) {
         console.error("Error fetching properties:", error);
       }
     };
 
     fetchProperties();
-  }, [searchParams]);
+  }, [searchParams, isRecommendation, token]);
 
   // 把縣市讀進來
   useEffect(() => {
@@ -227,6 +244,41 @@ const HomePage = () => {
     setSearchParams(searchParams);
   };
 
+  const handleRecommendation = async () => {
+    if (!token) {
+      // 如果未登入，彈出登入表單
+      setIsLoginModalVisible(true);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/property/recommendation", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // 更新房源列表為推薦結果
+        setProperties(data.data);
+        setTotalElements(data.totalElements);
+        setIsRecommendation(true);
+        searchParams.set("isRecommendation", "true");
+        setSearchParams(searchParams);
+        // 滾動到頂部
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      } else {
+        console.error("Failed to fetch recommendations");
+      }
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+    }
+  };
+
   const handleClearFilters = () => {
     setSelectedCity(null);
     setSelectedDistrict(null);
@@ -237,6 +289,9 @@ const HomePage = () => {
     setSelectedFeatures([]);
     setPage(0);
     setSearchParams({});
+
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
   };
 
   const PropertyCard = ({ property }) => {
@@ -485,8 +540,22 @@ const HomePage = () => {
                   icon={<ReloadOutlined />}
                   style={{ width: "100%" }}
                   onClick={handleClearFilters}
+                  danger
                 >
                   重置搜尋條件
+                </Button>
+              </Col>
+            </Row>
+            {/* 在搜尋表單下方添加推薦房源按鈕 */}
+            <Row style={{ marginTop: 16 }}>
+              <Col span={24}>
+                <Button
+                  type="primary"
+                  style={{ width: "100%" }}
+                  onClick={handleRecommendation}
+                  icon={<HomeOutlined />}
+                >
+                  推薦房源
                 </Button>
               </Col>
             </Row>

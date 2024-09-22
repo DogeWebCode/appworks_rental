@@ -46,6 +46,7 @@ public class FavoriteServiceImpl implements FavoriteService {
         return favorites.stream()
                 .map(favorite -> new FavoriteDTO(
                         favorite.getId(),
+                        favorite.getProperty().getId(),
                         favorite.getProperty().getTitle(),
                         favorite.getProperty().getCity().getCityName(),
                         favorite.getProperty().getDistrict().getDistrictName(),

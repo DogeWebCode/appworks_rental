@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
-import MainPage from "./components/MainPage";
-import FooterComponent from "./components/layout/FooterComponent";
 import PropertyDetail from "./components/PropertyDetail";
-import HeaderComponent from "./components/layout/HeaderComponent"; // 更新導入路徑
+import HeaderComponent from "./components/layout/HeaderComponent";
+import FavoriteList from "./components/FavoriteList";
+import FooterComponent from "./components/layout/FooterComponent";
 import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
+import HomePage from "./components/HomePage";
+import { message } from "antd";
 
 function App() {
   const [token, setToken] = useState(null);
@@ -49,6 +51,7 @@ function App() {
     setToken(null);
     setCurrentUserId(null);
     localStorage.removeItem("jwtToken"); // 清除 Token
+    message.success("登出成功！");
   };
 
   return (
@@ -62,7 +65,6 @@ function App() {
         setIsLoginModalVisible={setIsLoginModalVisible}
       />
       <Routes>
-        <Route path="/" element={<MainPage />} />
         <Route
           path="/property/:propertyId"
           element={
@@ -74,8 +76,30 @@ function App() {
             />
           }
         />
+        <Route
+          path="/"
+          element={
+            <HomePage
+              token={token}
+              currentUserId={currentUserId}
+              isLoginModalVisible={isLoginModalVisible}
+              setIsLoginModalVisible={setIsLoginModalVisible}
+            />
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <FavoriteList
+              token={token}
+              currentUserId={currentUserId}
+              isLoginModalVisible={isLoginModalVisible}
+              setIsLoginModalVisible={setIsLoginModalVisible}
+            />
+          }
+        />
       </Routes>
-      <FooterComponent />
+      <FooterComponent /> {/* 固定 Footer 到頁面底部 */}
     </>
   );
 }

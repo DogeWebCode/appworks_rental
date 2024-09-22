@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class FavoriteDTO {
     private Long id;
+    private Long propertyId;
     private String title;
     private String cityName;
     private String districtName;
