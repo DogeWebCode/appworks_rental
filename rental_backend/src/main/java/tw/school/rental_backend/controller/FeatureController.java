@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tw.school.rental_backend.data.dto.DataResponseDTO;
+import tw.school.rental_backend.data.dto.FeatureDTO;
 import tw.school.rental_backend.model.property.feature.Feature;
 import tw.school.rental_backend.service.FeatureService;
 
@@ -22,8 +23,8 @@ public class FeatureController {
 
     @GetMapping
     public ResponseEntity<?> getFeature() {
-        List<Feature> feature = featureService.findAllFeatures();
-        DataResponseDTO<List<Feature>> response = new DataResponseDTO<>(feature);
+        List<FeatureDTO> feature = featureService.findAllFeatures();
+        DataResponseDTO<List<FeatureDTO>> response = new DataResponseDTO<>(feature);
         return ResponseEntity.ok(response);
     }
 }

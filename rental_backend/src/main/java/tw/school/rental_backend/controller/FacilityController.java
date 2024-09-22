@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tw.school.rental_backend.data.dto.DataResponseDTO;
+import tw.school.rental_backend.data.dto.FacilityDTO;
 import tw.school.rental_backend.model.property.facility.Facility;
 import tw.school.rental_backend.service.FacilityService;
 
@@ -22,8 +23,8 @@ public class FacilityController {
 
     @GetMapping
     public ResponseEntity<?> getFacility() {
-        List<Facility> facility = facilityService.findAllFacilities();
-        DataResponseDTO<List<Facility>> response = new DataResponseDTO<>(facility);
+        List<FacilityDTO> facility = facilityService.findAllFacilities();
+        DataResponseDTO<List<FacilityDTO>> response = new DataResponseDTO<>(facility);
         return ResponseEntity.ok(response);
     }
 }

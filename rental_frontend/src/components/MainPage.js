@@ -14,50 +14,51 @@ import {
 } from "antd";
 import { ReloadOutlined, SmileOutlined } from "@ant-design/icons";
 import MainLayout from "./layout/MainLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 
 const HomePage = () => {
   const [properties, setProperties] = useState([]);
-  const [page, setPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-
-  const [, setSearchTriggered] = useState(false);
-
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [roads, setRoads] = useState([]);
-
-  const [selectedCity, setSelectedCity] = useState(null);
-  const [selectedDistrict, setSelectedDistrict] = useState(null);
-  const [selectedRoad, setSelectedRoad] = useState(null);
-
-  const [minPrice, setMinPrice] = useState(null);
-  const [maxPrice, setMaxPrice] = useState(null);
-
   const [facilities, setFacilities] = useState([]);
   const [features, setFeatures] = useState([]);
-  const [selectedFacilities, setSelectedFacilities] = useState([]);
-  const [selectedFeatures, setSelectedFeatures] = useState([]);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [selectedCity, setSelectedCity] = useState(
+    searchParams.get("city") || null
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState(
+    searchParams.get("district") || null
+  );
+  const [selectedRoad, setSelectedRoad] = useState(
+    searchParams.get("road") || null
+  );
+  const [minPrice, setMinPrice] = useState(
+    searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")) : null
+  );
+  const [maxPrice, setMaxPrice] = useState(
+    searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")) : null
+  );
+  const [selectedFacilities, setSelectedFacilities] = useState(
+    searchParams.get("facility") ? searchParams.get("facility").split(",") : []
+  );
+  const [selectedFeatures, setSelectedFeatures] = useState(
+    searchParams.get("feature") ? searchParams.get("feature").split(",") : []
+  );
+  const [page, setPage] = useState(
+    searchParams.get("page") ? parseInt(searchParams.get("page")) : 0
+  );
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const queryParams = new URLSearchParams();
-        if (selectedCity) queryParams.append("city", selectedCity);
-        if (selectedDistrict) queryParams.append("district", selectedDistrict);
-        if (selectedRoad) queryParams.append("road", selectedRoad);
-        if (minPrice) queryParams.append("minPrice", minPrice);
-        if (maxPrice) queryParams.append("maxPrice", maxPrice);
-        if (selectedFeatures.length > 0) {
-          queryParams.append("feature", selectedFeatures.join(","));
-        }
-        if (selectedFacilities.length > 0) {
-          queryParams.append("facility", selectedFacilities.join(","));
-        }
-        queryParams.append("page", page);
+        const queryParams = new URLSearchParams(searchParams);
 
         const response = await fetch(
           `/api/property/search?${queryParams.toString()}`
@@ -71,16 +72,7 @@ const HomePage = () => {
     };
 
     fetchProperties();
-  }, [
-    page,
-    selectedCity,
-    selectedDistrict,
-    selectedRoad,
-    minPrice,
-    maxPrice,
-    selectedFeatures,
-    selectedFacilities,
-  ]);
+  }, [searchParams]);
 
   // 把縣市讀進來
   useEffect(() => {
@@ -99,16 +91,15 @@ const HomePage = () => {
         .then((res) => res.json())
         .then((data) => {
           setDistricts(data.data);
-          setSelectedDistrict(null); // 清空區域選項
-          setRoads([]); // 清空道路選項
-          setSelectedRoad(null); // 清空選定的道路
+          const districtFromParams = searchParams.get("district");
+          setSelectedDistrict(districtFromParams || null);
         })
         .catch((err) => console.error(err));
     } else {
       setDistricts([]);
-      setRoads([]);
+      setSelectedDistrict(null);
     }
-  }, [selectedCity]);
+  }, [selectedCity, searchParams]);
 
   // 當選擇區域後讀相對應的道路
   useEffect(() => {
@@ -119,13 +110,15 @@ const HomePage = () => {
         .then((res) => res.json())
         .then((data) => {
           setRoads(data.data || []);
-          setSelectedRoad(null); // 清空選定的道路
+          const roadFromParams = searchParams.get("road");
+          setSelectedRoad(roadFromParams || null);
         })
         .catch((err) => console.error(err));
     } else {
       setRoads([]);
+      setSelectedRoad(null);
     }
-  }, [selectedDistrict, selectedCity]);
+  }, [selectedDistrict, selectedCity, searchParams]);
 
   // 加載設備數據
   useEffect(() => {
@@ -144,13 +137,96 @@ const HomePage = () => {
       .catch((err) => console.error(err));
   }, []);
 
-  //   // 當用戶點擊搜索按鈕
-  //   const handleSearch = () => {
-  //     setPage(0); // 重置頁數
-  //     setSearchTriggered(true); // 標記搜索已觸發
-  //   };
+  const handleCityChange = (value) => {
+    setSelectedCity(value);
+    setSelectedDistrict(null);
+    setSelectedRoad(null);
 
-  // 當用戶點擊清除搜索條件
+    if (value) {
+      searchParams.set("city", value);
+    } else {
+      searchParams.delete("city");
+    }
+    searchParams.delete("district");
+    searchParams.delete("road");
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleDistrictChange = (value) => {
+    setSelectedDistrict(value);
+    setSelectedRoad(null);
+
+    if (value) {
+      searchParams.set("district", value);
+    } else {
+      searchParams.delete("district");
+    }
+    searchParams.delete("road");
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleRoadChange = (value) => {
+    setSelectedRoad(value);
+
+    if (value) {
+      searchParams.set("road", value);
+    } else {
+      searchParams.delete("road");
+    }
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleMinPriceChange = (value) => {
+    setMinPrice(value);
+
+    if (value !== null && value !== undefined) {
+      searchParams.set("minPrice", value);
+    } else {
+      searchParams.delete("minPrice");
+    }
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleMaxPriceChange = (value) => {
+    setMaxPrice(value);
+
+    if (value !== null && value !== undefined) {
+      searchParams.set("maxPrice", value);
+    } else {
+      searchParams.delete("maxPrice");
+    }
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleFacilitiesChange = (value) => {
+    setSelectedFacilities(value);
+
+    if (value.length > 0) {
+      searchParams.set("facility", value.join(","));
+    } else {
+      searchParams.delete("facility");
+    }
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
+  const handleFeaturesChange = (value) => {
+    setSelectedFeatures(value);
+
+    if (value.length > 0) {
+      searchParams.set("feature", value.join(","));
+    } else {
+      searchParams.delete("feature");
+    }
+    searchParams.set("page", 0); // 重置頁數
+    setSearchParams(searchParams);
+  };
+
   const handleClearFilters = () => {
     setSelectedCity(null);
     setSelectedDistrict(null);
@@ -159,34 +235,15 @@ const HomePage = () => {
     setMaxPrice(null);
     setSelectedFacilities([]);
     setSelectedFeatures([]);
-    setSearchTriggered(false); // 重置搜索觸發狀態
-    setPage(0); // 重置頁數
+    setPage(0);
+    setSearchParams({});
   };
 
-  //   const validateSearchParams = () => {
-  //     if (
-  //       searchParams.minPrice &&
-  //       searchParams.maxPrice &&
-  //       searchParams.minPrice > searchParams.maxPrice
-  //     ) {
-  //       message.error("最低價格不能高於最高價格");
-  //       return false;
-  //     }
-  //     return true;
-  //   };
-
-  //   const handlePriceChange = (type, value) => {
-  //     setSearchParams((prevParams) => ({
-  //       ...prevParams,
-  //       [type === "min" ? "minPrice" : "maxPrice"]: value,
-  //     }));
-  //   };
-
   const PropertyCard = ({ property }) => {
-    const navigate = useNavigate(); // 使用 useNavigate 來處理導航
+    const navigate = useNavigate();
 
     const handleCardClick = () => {
-      navigate(`/property/${property.id}`); // 點擊後導航到詳細頁面，並傳遞 propertyId
+      navigate(`/property/${property.id}`);
     };
 
     return (
@@ -199,7 +256,7 @@ const HomePage = () => {
             style={{ height: 200, objectFit: "cover" }}
           />
         }
-        onClick={handleCardClick} // 點擊卡片時導航到詳細頁面
+        onClick={handleCardClick}
       >
         <Card.Meta
           title={
@@ -305,7 +362,7 @@ const HomePage = () => {
                 <Select
                   placeholder="選擇縣市"
                   style={{ width: "100%" }}
-                  onChange={(value) => setSelectedCity(value)}
+                  onChange={handleCityChange}
                   value={selectedCity}
                 >
                   {cities.map((city) => (
@@ -321,8 +378,8 @@ const HomePage = () => {
                 <Select
                   placeholder="選擇區域"
                   style={{ width: "100%" }}
-                  onChange={(value) => setSelectedDistrict(value)}
-                  value={selectedDistrict} // 保留當前選中的區域
+                  onChange={handleDistrictChange}
+                  value={selectedDistrict}
                   disabled={!selectedCity}
                 >
                   {districts.map((district) => (
@@ -338,8 +395,8 @@ const HomePage = () => {
                 <Select
                   placeholder="選擇道路"
                   style={{ width: "100%" }}
-                  onChange={(value) => setSelectedRoad(value)}
-                  value={selectedRoad} // 保留當前選中的道路
+                  onChange={handleRoadChange}
+                  value={selectedRoad}
                   disabled={!selectedDistrict}
                 >
                   {roads.map((road) => (
@@ -357,7 +414,7 @@ const HomePage = () => {
                   placeholder="最低價格"
                   min={0}
                   step={1000}
-                  onChange={(value) => setMinPrice(value)}
+                  onChange={handleMinPriceChange}
                   formatter={(value) =>
                     `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
@@ -372,7 +429,7 @@ const HomePage = () => {
                   placeholder="最高價格"
                   min={0}
                   step={1000}
-                  onChange={(value) => setMaxPrice(value)}
+                  onChange={handleMaxPriceChange}
                   formatter={(value) =>
                     `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
@@ -389,7 +446,7 @@ const HomePage = () => {
                   mode="multiple"
                   placeholder="選擇設備"
                   style={{ width: "100%" }}
-                  onChange={(value) => setSelectedFacilities(value)}
+                  onChange={handleFacilitiesChange}
                   value={selectedFacilities}
                 >
                   {facilities.map((facility) => (
@@ -408,7 +465,7 @@ const HomePage = () => {
                   mode="multiple"
                   placeholder="選擇特色"
                   style={{ width: "100%", marginTop: 10 }}
-                  onChange={(value) => setSelectedFeatures(value)}
+                  onChange={handleFeaturesChange}
                   value={selectedFeatures}
                 >
                   {features.map((feature) => (
@@ -480,12 +537,13 @@ const HomePage = () => {
             <div style={{ marginTop: 24, textAlign: "center" }}>
               <Pagination
                 current={page + 1}
+                align="center"
                 pageSize={12}
                 total={totalElements}
-                align="center"
                 onChange={(newPage) => {
                   setPage(newPage - 1);
-                  setSearchTriggered(true);
+                  searchParams.set("page", newPage - 1);
+                  setSearchParams(searchParams);
                   window.scrollTo({
                     top: 0,
                     behavior: "smooth",

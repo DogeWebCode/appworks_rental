@@ -44,6 +44,10 @@ public class ChatController {
                     "/queue/message",
                     chatMessage
             );
+
+            // 通知所有人更新聊天對象列表
+            List<String> updatedChatPartners = chatService.getChatPartners(principal.getName());
+            messagingTemplate.convertAndSend("/topic/chat/partners", updatedChatPartners);
         } else {
             log.warn("No principal found in header accessor.");
         }

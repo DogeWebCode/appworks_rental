@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import MainPage from "./components/MainPage";
 import FooterComponent from "./components/layout/FooterComponent";
-import ChatRoom from "./components/ChatRoom";
 import PropertyDetail from "./components/PropertyDetail";
 import HeaderComponent from "./components/layout/HeaderComponent"; // 更新導入路徑
 import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
@@ -10,6 +9,7 @@ import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
 function App() {
   const [token, setToken] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
 
   // 檢查 Token 是否有效
   useEffect(() => {
@@ -23,6 +23,7 @@ function App() {
         if (decodedToken.exp && decodedToken.exp > currentTime) {
           setToken(savedToken);
           setCurrentUserId(decodedToken.username || decodedToken.sub); // 設置當前使用者 ID
+          console.log(decodedToken);
         } else {
           localStorage.removeItem("jwtToken"); // Token 過期，移除 Token
         }
@@ -35,12 +36,12 @@ function App() {
 
   // 處理登入
   const handleLogin = (newToken) => {
-    localStorage.setItem("jwtToken", newToken); // 儲存 Token 到 localStorage
+    localStorage.setItem("jwtToken", newToken);
     setToken(newToken);
 
-    // 解析 Token，獲取當前使用者的 ID 或 Username
     const decodedToken = jwtDecode(newToken);
-    setCurrentUserId(decodedToken.sub || decodedToken.username); // Token 中的 "sub" 或 "username" 是使用者 ID
+    setCurrentUserId(decodedToken.sub || decodedToken.username);
+    setIsLoginModalVisible(false);
   };
 
   // 處理登出
@@ -57,10 +58,22 @@ function App() {
         currentUserId={currentUserId}
         onLogin={handleLogin}
         onLogout={handleLogout}
+        isLoginModalVisible={isLoginModalVisible}
+        setIsLoginModalVisible={setIsLoginModalVisible}
       />
       <Routes>
         <Route path="/" element={<MainPage />} />
-        <Route path="/property/:propertyId" element={<PropertyDetail />} />
+        <Route
+          path="/property/:propertyId"
+          element={
+            <PropertyDetail
+              token={token}
+              currentUserId={currentUserId}
+              isLoginModalVisible={isLoginModalVisible}
+              setIsLoginModalVisible={setIsLoginModalVisible}
+            />
+          }
+        />
       </Routes>
       <FooterComponent />
     </>

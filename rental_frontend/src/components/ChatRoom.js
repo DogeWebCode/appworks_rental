@@ -153,7 +153,7 @@ const MessageInput = React.memo(
 
 // ---------------------------- 聊天室本體 -------------------------------------
 
-const ChatRoom = ({ token, currentUserId }) => {
+const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
   const [messages, setMessages] = useState([]); // 訊息列表
   const [inputMessage, setInputMessage] = useState(""); // 輸入的訊息
   const [targetUserId, setTargetUserId] = useState(null); // 目標用戶 ID
@@ -162,40 +162,46 @@ const ChatRoom = ({ token, currentUserId }) => {
   const [isComposing, setIsComposing] = useState(false); // 是否正在輸入
   const stompClient = useRef(null); // Stomp 客戶端
   const messageListRef = useRef(null); // 訊息列表的引用
-
   const targetUserIdRef = useRef(targetUserId); // 目標用戶 ID 的引用
 
   useEffect(() => {
-    targetUserIdRef.current = targetUserId; // 更新目標用戶 ID 的引用
-  }, [targetUserId]);
+    if (propTargetUserId) {
+      setTargetUserId(propTargetUserId);
+    }
+  }, [propTargetUserId]);
 
   useEffect(() => {
-    const socket = new SockJS("https://goodshiba.com/ws?token=" + token);
+    targetUserIdRef.current = targetUserId; // 更新目標用戶 ID
+  }, [targetUserId]);
+
+  // WebSocket 連接邏輯
+  useEffect(() => {
+    const socket = new SockJS(
+      `http://localhost:8080/ws?token=${encodeURIComponent(token)}`
+    );
     stompClient.current = Stomp.over(socket); // 使用 Stomp 包裝 SockJS
 
-    stompClient.current.connect(
-      {},
-      (frame) => {
-        console.log("Connected: " + frame);
+    stompClient.current.connect({}, () => {
+      // 訂閱聊天對象列表的更新
+      stompClient.current.subscribe("/topic/chat/partners", (message) => {
+        const updatedUserList = JSON.parse(message.body);
+        setUserList(updatedUserList); // 更新本地聊天對象列表
+      });
 
-        stompClient.current.subscribe("/user/queue/message", (message) => {
-          const newMessage = JSON.parse(message.body);
+      stompClient.current.subscribe("/user/queue/message", (message) => {
+        const newMessage = JSON.parse(message.body);
 
-          // 確保聊天訊息不會跑到別人的聊天室
-          if (
-            (newMessage.senderId === targetUserIdRef.current &&
-              newMessage.receiverId === currentUserId) ||
-            (newMessage.senderId === currentUserId &&
-              newMessage.receiverId === targetUserIdRef.current)
-          ) {
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
-          }
-        });
-      },
-      (error) => {
-        console.error("WebSocket connection error: " + error);
-      }
-    );
+        // 確保聊天訊息不會跑到別人的聊天室
+        if (
+          (newMessage.senderId === targetUserIdRef.current &&
+            newMessage.receiverId === currentUserId) ||
+          (newMessage.senderId === currentUserId &&
+            newMessage.receiverId === targetUserIdRef.current)
+        ) {
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+      });
+    });
 
     return () => {
       if (stompClient.current) {
@@ -214,7 +220,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       .then((response) => response.json())
       .then((data) => {
         const filteredUsers = data.filter((user) => user !== currentUserId);
-        setUserList(filteredUsers); // 設定用戶列表
+        setUserList(filteredUsers); // 設置過去聊過天的使用者
       })
       .catch((error) => console.error("Error fetching chat partners:", error));
   }, [token, currentUserId]);
@@ -224,6 +230,25 @@ const ChatRoom = ({ token, currentUserId }) => {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, []);
+
+  useEffect(() => {
+    if (targetUserId) {
+      fetch(`/api/chat/messages?receiverId=${targetUserId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setMessages(data);
+          scrollToBottom();
+        })
+        .catch((error) =>
+          console.error("Error fetching chat messages:", error)
+        );
+    }
+  }, [targetUserId, token, scrollToBottom]);
 
   const groupMessagesByDate = useCallback((messages) => {
     const groups = {}; // 訊息分組
@@ -250,8 +275,11 @@ const ChatRoom = ({ token, currentUserId }) => {
         timestamp: new Date().toISOString(),
       };
 
-      setMessages((prevMessages) => [...prevMessages, chatMessage]); // 更新訊息
+      // 更新訊息
+      setMessages((prevMessages) => [...prevMessages, chatMessage]);
+
       stompClient.current.send("/app/message", {}, JSON.stringify(chatMessage));
+
       setInputMessage("");
       scrollToBottom();
     } else {
@@ -272,6 +300,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       })
         .then((response) => response.json())
         .then((data) => {
+          console.log(data);
           setMessages(data);
           scrollToBottom();
         })
@@ -311,12 +340,14 @@ const ChatRoom = ({ token, currentUserId }) => {
         >
           <ChatHeader sx={{ flexShrink: 0 }}>
             <Avatar sx={{ mr: 2 }}>
-              {targetUserName ? targetUserName[0].toUpperCase() : "?"}
+              {targetUserName
+                ? targetUserName[0].toUpperCase()
+                : propTargetUserId[0].toUpperCase()}
             </Avatar>
             <Typography variant="h6">
               {targetUserName
                 ? `與 ${targetUserName} 聊天中`
-                : "請選擇想聊天的是誰～"}
+                : `與 ${propTargetUserId} 聊天中`}
             </Typography>
           </ChatHeader>
           <Divider sx={{ flexShrink: 0 }} />

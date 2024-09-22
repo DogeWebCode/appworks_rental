@@ -1,11 +1,13 @@
 package tw.school.rental_backend.service.Impl;
 
 import org.springframework.stereotype.Service;
+import tw.school.rental_backend.data.dto.FacilityDTO;
 import tw.school.rental_backend.model.property.facility.Facility;
 import tw.school.rental_backend.repository.jpa.property.FacilityRepository;
 import tw.school.rental_backend.service.FacilityService;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FacilityServiceImpl implements FacilityService {
@@ -17,8 +19,15 @@ public class FacilityServiceImpl implements FacilityService {
     }
 
     @Override
-    public List<Facility> findAllFacilities() {
-        return facilityRepository.findAll();
+    public List<FacilityDTO> findAllFacilities() {
+        List<Facility> facilities = facilityRepository.findAll();
+        String imageUrl = "https://d12sfdsmuxoz1g.cloudfront.net/facility_icon/";
+        return facilities.stream()
+                .map(facility -> new FacilityDTO(
+                        facility.getId(),
+                        facility.getFacilityName(),
+                        imageUrl + facility.getIconUrl()
+                ))
+                .collect(Collectors.toList());
     }
-
 }

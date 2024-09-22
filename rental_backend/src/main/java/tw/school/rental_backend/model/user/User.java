@@ -46,14 +46,14 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     private Date modifiedTime;
 
-//    @PrePersist
-//    protected void onCreate() {
-//        createdAt = new Date();
-//        modifiedTime = new Date();
-//    }
-//
-//    @PreUpdate
-//    protected void onUpdate() {
-//        modifiedTime = new Date();
-//    }
+    @PrePersist
+    protected void onCreate() {
+        createdAt = new Date();
+        modifiedTime = new Date();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        modifiedTime = new Date();
+    }
 }

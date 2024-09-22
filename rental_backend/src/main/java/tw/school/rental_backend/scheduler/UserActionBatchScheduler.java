@@ -16,7 +16,7 @@ public class UserActionBatchScheduler {
     }
 
     // 每隔 10 分鐘執行一次批次存儲
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 600000)
     public void scheduleBatchSave() {
         userActionService.batchSaveActions();
         log.info("UserActionBatchScheduler: batch save actions");

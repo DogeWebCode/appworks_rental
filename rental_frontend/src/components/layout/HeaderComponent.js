@@ -15,8 +15,14 @@ import { useNavigate } from "react-router-dom";
 const { Header } = Layout;
 const { Title } = Typography;
 
-const HeaderComponent = ({ token, currentUserId, onLogin, onLogout }) => {
-  const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
+const HeaderComponent = ({
+  token,
+  currentUserId,
+  onLogin,
+  onLogout,
+  isLoginModalVisible,
+  setIsLoginModalVisible,
+}) => {
   const [loading, setLoading] = useState(false);
 
   const handleLoginClick = () => {
@@ -34,7 +40,7 @@ const HeaderComponent = ({ token, currentUserId, onLogin, onLogout }) => {
   };
 
   const handleSubmit = async (values) => {
-    const { username, password } = values;
+    const { email, password } = values;
     setLoading(true);
     try {
       const response = await fetch("/api/user/login", {
@@ -42,7 +48,7 @@ const HeaderComponent = ({ token, currentUserId, onLogin, onLogout }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (response.ok) {
@@ -67,11 +73,13 @@ const HeaderComponent = ({ token, currentUserId, onLogin, onLogout }) => {
       <Header style={{ background: "#fff", padding: 0 }}>
         <div
           style={{
-            maxWidth: 1200,
+            width: "100%",
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+            borderRadius: "8px",
+            borderBottom: "2px solid #f0f0f0",
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -128,9 +136,9 @@ const HeaderComponent = ({ token, currentUserId, onLogin, onLogout }) => {
       >
         <Form layout="vertical" onFinish={handleSubmit}>
           <Form.Item
-            label="帳號"
-            name="username"
-            rules={[{ required: true, message: "請輸入帳號!" }]}
+            label="電子信箱"
+            name="email"
+            rules={[{ required: true, message: "請輸入電子信箱!" }]}
           >
             <Input />
           </Form.Item>

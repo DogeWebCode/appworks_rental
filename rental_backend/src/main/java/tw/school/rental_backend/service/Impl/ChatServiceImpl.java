@@ -1,5 +1,6 @@
 package tw.school.rental_backend.service.Impl;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.model.chat.ChatMessage;
 import tw.school.rental_backend.repository.mongo.chat.ChatMessageRepository;
@@ -16,15 +17,21 @@ import java.util.Set;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatServiceImpl(ChatMessageRepository chatMessageRepository) {
+    public ChatServiceImpl(ChatMessageRepository chatMessageRepository, SimpMessagingTemplate messagingTemplate) {
         this.chatMessageRepository = chatMessageRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Override
     public void saveMessage(ChatMessage chatMessage) {
         chatMessage.setTimestamp(LocalDateTime.now());
         chatMessageRepository.save(chatMessage);
+
+        // 保存後獲取最新的聊天夥伴列表並推送給所有人
+        List<String> updatedChatPartners = getChatPartners(chatMessage.getSenderId());
+        messagingTemplate.convertAndSend("/topic/chat/partners", updatedChatPartners);
     }
 
     @Override

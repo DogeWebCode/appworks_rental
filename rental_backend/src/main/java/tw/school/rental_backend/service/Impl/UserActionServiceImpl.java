@@ -61,7 +61,6 @@ public class UserActionServiceImpl implements UserActionService {
             return;
         }
 
-        // 創建 ObjectMapper 並註冊 JavaTimeModule
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule()); // 用 JavaTimeModule 處理 LocalDateTime
 
