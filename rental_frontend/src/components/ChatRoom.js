@@ -47,15 +47,25 @@ const MessageDateSeparator = ({ date }) => (
 
 // ---------------------------- 聊天室樣式 -------------------------------------
 
-const StyledPaper = styled(Paper)({
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  height: "55vh",
+  maxWidth: "800px",
+  margin: "auto", // 居中
   display: "flex",
   flexDirection: "column",
-  height: "100vh",
-  borderRadius: 0,
+  borderRadius: theme.shape.borderRadius,
+  overflow: "hidden",
+  boxShadow: theme.shadows[3],
+}));
+
+const ChatContainer = styled(Box)({
+  display: "flex",
+  flex: 1,
+  overflow: "hidden",
 });
 
 const ChatHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(2),
+  padding: theme.spacing(1, 2),
   backgroundColor: theme.palette.primary.main,
   color: theme.palette.primary.contrastText,
   display: "flex",
@@ -63,7 +73,8 @@ const ChatHeader = styled(Box)(({ theme }) => ({
 }));
 
 const UserList = styled(List)(({ theme }) => ({
-  width: "25%",
+  width: "30%",
+  maxWidth: "200px",
   borderRight: `1px solid ${theme.palette.divider}`,
   overflowY: "auto",
 }));
@@ -78,10 +89,8 @@ const ChatArea = styled(Box)({
 const MessageList = styled(List)(({ theme }) => ({
   flex: 1,
   overflowY: "auto",
-  padding: theme.spacing(2),
+  padding: theme.spacing(1),
   backgroundColor: theme.palette.grey[100],
-  display: "flex",
-  flexDirection: "column",
 }));
 
 const StyledMessageBubble = styled(Box, {
@@ -103,8 +112,9 @@ const StyledMessageBubble = styled(Box, {
 
 const InputArea = styled(Box)(({ theme }) => ({
   display: "flex",
-  padding: theme.spacing(2),
+  padding: theme.spacing(1),
   backgroundColor: theme.palette.background.paper,
+  borderTop: `1px solid ${theme.palette.divider}`,
 }));
 
 // ---------------------------- 聊天室組件 -------------------------------------
@@ -112,43 +122,6 @@ const MessageBubble = ({ isCurrentUser, children }) => (
   <StyledMessageBubble isCurrentUser={isCurrentUser}>
     <Typography variant="body1">{children}</Typography>
   </StyledMessageBubble>
-);
-
-const MessageInput = React.memo(
-  ({
-    inputMessage,
-    setInputMessage,
-    sendMessage,
-    isComposing,
-    setIsComposing,
-    disabled,
-  }) => (
-    <InputArea>
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="請輸入訊息"
-        value={inputMessage}
-        onChange={(e) => setInputMessage(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !isComposing) {
-            sendMessage();
-          }
-        }}
-        onCompositionStart={() => setIsComposing(true)}
-        onCompositionEnd={() => setIsComposing(false)}
-        disabled={disabled}
-        sx={{ mr: 1 }}
-      />
-      <IconButton
-        color="primary"
-        onClick={sendMessage}
-        disabled={disabled || !inputMessage.trim()}
-      >
-        <SendIcon />
-      </IconButton>
-    </InputArea>
-  )
 );
 
 // ---------------------------- 聊天室本體 -------------------------------------
@@ -176,9 +149,8 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
 
   // WebSocket 連接邏輯
   useEffect(() => {
-    const socket = new SockJS(
-      `http://localhost:8080/ws?token=${encodeURIComponent(token)}`
-    );
+    // const socket = new SockJS(`http://localhost:8080/ws?token=${token}`);
+    const socket = new SockJS(`https://goodshiba.com/ws?token=${token}`);
     stompClient.current = Stomp.over(socket); // 使用 Stomp 包裝 SockJS
 
     stompClient.current.connect({}, () => {
@@ -241,7 +213,7 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
       })
         .then((response) => response.json())
         .then((data) => {
-          setMessages(data);
+          setMessages(Array.isArray(data) ? data : []);
           scrollToBottom();
         })
         .catch((error) =>
@@ -300,7 +272,6 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
       })
         .then((response) => response.json())
         .then((data) => {
-          console.log(data);
           setMessages(data);
           scrollToBottom();
         })
@@ -314,15 +285,9 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
   // ---------------------------- 渲染畫面 -------------------------------------
 
   return (
-    <StyledPaper
-      elevation={0}
-      sx={{ height: "100vh", display: "flex", flexDirection: "column" }}
-    >
-      <Box display="flex" flexGrow={1} overflow="hidden" height="100vh">
-        <UserList
-          subheader={<ListSubheader>聊天記錄</ListSubheader>}
-          sx={{ overflowY: "auto" }}
-        >
+    <StyledPaper elevation={0}>
+      <ChatContainer>
+        <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
           {userList.map((user) => (
             <ListItemButton key={user} onClick={() => selectUser(user)}>
               <Avatar sx={{ mr: 2 }}>{user[0].toUpperCase()}</Avatar>
@@ -330,19 +295,14 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
             </ListItemButton>
           ))}
         </UserList>
-        <ChatArea
-          sx={{
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            height: "100vh",
-          }}
-        >
-          <ChatHeader sx={{ flexShrink: 0 }}>
+        <ChatArea>
+          <ChatHeader>
             <Avatar sx={{ mr: 2 }}>
-              {targetUserName
+              {targetUserName && targetUserName.length > 0
                 ? targetUserName[0].toUpperCase()
-                : propTargetUserId[0].toUpperCase()}
+                : propTargetUserId && propTargetUserId.length > 0
+                ? propTargetUserId[0].toUpperCase()
+                : "?"}
             </Avatar>
             <Typography variant="h6">
               {targetUserName
@@ -350,13 +310,8 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
                 : `與 ${propTargetUserId} 聊天中`}
             </Typography>
           </ChatHeader>
-          <Divider sx={{ flexShrink: 0 }} />
-
-          {/* 訊息區域設定為可滾動 */}
-          <MessageList
-            ref={messageListRef}
-            sx={{ flexGrow: 1, overflowY: "auto" }}
-          >
+          <Divider />
+          <MessageList ref={messageListRef}>
             {Object.entries(groupMessagesByDate(messages)).map(
               ([date, msgs]) => (
                 <React.Fragment key={date}>
@@ -401,18 +356,34 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
               )
             )}
           </MessageList>
-          <Divider sx={{ flexShrink: 0 }} />
-          <MessageInput
-            inputMessage={inputMessage}
-            setInputMessage={setInputMessage}
-            sendMessage={sendMessage}
-            isComposing={isComposing}
-            setIsComposing={setIsComposing}
-            disabled={!targetUserId}
-            sx={{ flexShrink: 0 }}
-          />
+          <Divider />
+          <InputArea>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="請輸入訊息"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isComposing) {
+                  sendMessage();
+                }
+              }}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              disabled={!targetUserId}
+              sx={{ mr: 1 }}
+            />
+            <IconButton
+              color="primary"
+              onClick={sendMessage}
+              disabled={!targetUserId || !inputMessage.trim()}
+            >
+              <SendIcon />
+            </IconButton>
+          </InputArea>
         </ChatArea>
-      </Box>
+      </ChatContainer>
     </StyledPaper>
   );
 };

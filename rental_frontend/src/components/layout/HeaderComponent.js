@@ -9,8 +9,13 @@ import {
   Input,
   message,
 } from "antd";
-import { LogoutOutlined, LoginOutlined } from "@ant-design/icons";
+import {
+  LogoutOutlined,
+  LoginOutlined,
+  MessageOutlined,
+} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import ChatRoom from "../ChatRoom";
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -22,6 +27,11 @@ const HeaderComponent = ({
   onLogout,
   isLoginModalVisible,
   setIsLoginModalVisible,
+  isChatVisible,
+  setIsChatVisible,
+  setChatTargetUser,
+  chatTargetUser,
+  hideChat,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -58,18 +68,23 @@ const HeaderComponent = ({
       if (response.ok) {
         const token = await response.text();
         localStorage.setItem("jwtToken", token);
-        onLogin(token); // 傳遞 token 到上層
+        onLogin(token); // 傳遞 token 到父組件，透過 app.js 去做狀態管理
         handleModalClose(); // 成功後關閉登入表單
         message.success("登入成功！"); // 顯示成功訊息
       } else {
-        message.error("登入失敗，請檢查帳號或密碼！"); // 顯示失敗訊息
+        message.error("登入失敗，請檢查帳號或密碼！");
       }
     } catch (error) {
       console.error("Error during login:", error);
-      message.error("登入過程中發生錯誤，請稍後再試！"); // 顯示錯誤訊息
+      message.error("登入過程中發生錯誤，請稍後再試！");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChatClick = () => {
+    setChatTargetUser("");
+    setIsChatVisible(true);
   };
 
   return (
@@ -138,6 +153,15 @@ const HeaderComponent = ({
                 >
                   房源收藏夾
                 </Button>
+                {/* 聊天室圖示 */}
+                <Button
+                  type="link"
+                  icon={<MessageOutlined />}
+                  style={{ fontFamily: "system-ui", marginRight: 20 }}
+                  onClick={handleChatClick} // 使用 handleChatClick
+                >
+                  聊天室
+                </Button>
                 <Button
                   type="primary"
                   icon={<LogoutOutlined />}
@@ -159,6 +183,44 @@ const HeaderComponent = ({
           </div>
         </div>
       </Header>
+
+      {/* 固定在底部的小聊天室 */}
+      {isChatVisible && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            right: 20,
+            width: "50vh",
+            background: "#fff",
+            border: "1px solid #ddd",
+            boxShadow: "0px 0px 10px rgba(0,0,0,0.1)",
+            borderRadius: "10px 10px 0 0",
+            zIndex: 1000,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "10px",
+              background: "#fafafa",
+              borderBottom: "1px solid #ddd",
+            }}
+          >
+            <span style={{ fontWeight: "bold" }}>聊天室</span>
+            <Button
+              type="link"
+              style={{ float: "right" }}
+              onClick={() => setIsChatVisible(false)}
+            >
+              關閉
+            </Button>
+          </div>
+          <div style={{ height: "100%", overflowY: "auto" }}>
+            <ChatRoom token={token} currentUserId={currentUserId} />
+          </div>
+        </div>
+      )}
 
       {/* 登入表單的 Modal 彈窗 */}
       <Modal

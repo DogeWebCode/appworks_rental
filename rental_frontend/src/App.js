@@ -7,11 +7,14 @@ import FooterComponent from "./components/layout/FooterComponent";
 import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
 import HomePage from "./components/HomePage";
 import { message } from "antd";
+import ChatRoom from "./components/ChatRoom";
 
 function App() {
   const [token, setToken] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
+  const [chatTargetUser, setChatTargetUser] = useState(null);
 
   // 檢查 Token 是否有效
   useEffect(() => {
@@ -25,7 +28,6 @@ function App() {
         if (decodedToken.exp && decodedToken.exp > currentTime) {
           setToken(savedToken);
           setCurrentUserId(decodedToken.username || decodedToken.sub); // 設置當前使用者 ID
-          console.log(decodedToken);
         } else {
           localStorage.removeItem("jwtToken"); // Token 過期，移除 Token
         }
@@ -54,6 +56,18 @@ function App() {
     message.success("登出成功！");
   };
 
+  // 顯示聊天室並設置聊天對象
+  const showChat = (targetUserId) => {
+    setChatTargetUser(targetUserId);
+    setIsChatVisible(true);
+  };
+
+  // 隱藏聊天室
+  const hideChat = () => {
+    setIsChatVisible(false);
+    setChatTargetUser(null);
+  };
+
   return (
     <>
       <HeaderComponent
@@ -63,6 +77,11 @@ function App() {
         onLogout={handleLogout}
         isLoginModalVisible={isLoginModalVisible}
         setIsLoginModalVisible={setIsLoginModalVisible}
+        isChatVisible={isChatVisible}
+        setIsChatVisible={setIsChatVisible}
+        chatTargetUser={chatTargetUser}
+        setChatTargetUser={setChatTargetUser}
+        hideChat={hideChat}
       />
       <Routes>
         <Route
@@ -73,6 +92,7 @@ function App() {
               currentUserId={currentUserId}
               isLoginModalVisible={isLoginModalVisible}
               setIsLoginModalVisible={setIsLoginModalVisible}
+              showChat={showChat}
             />
           }
         />
@@ -99,7 +119,52 @@ function App() {
           }
         />
       </Routes>
-      <FooterComponent /> {/* 固定 Footer 到頁面底部 */}
+      {/* 固定在底部的小聊天室 */}
+      {isChatVisible && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            right: 20,
+            width: 500,
+            background: "#fff",
+            border: "1px solid #ddd",
+            boxShadow: "0px 0px 10px rgba(0,0,0,0.1)",
+            borderRadius: "10px 10px 0 0",
+            zIndex: 1000,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "10px",
+              background: "#fafafa",
+              borderBottom: "1px solid #ddd",
+            }}
+          >
+            <span style={{ fontWeight: "bold" }}>聊天室</span>
+            <button
+              style={{
+                float: "right",
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+              }}
+              onClick={hideChat}
+            >
+              關閉
+            </button>
+          </div>
+          <div style={{ height: "100%", overflowY: "auto" }}>
+            <ChatRoom
+              token={token}
+              currentUserId={currentUserId}
+              targetUserId={chatTargetUser}
+            />
+          </div>
+        </div>
+      )}
+      <FooterComponent />
     </>
   );
 }

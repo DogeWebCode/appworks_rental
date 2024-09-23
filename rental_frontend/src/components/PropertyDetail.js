@@ -7,8 +7,8 @@ import {
   Row,
   Col,
   Card,
-  Modal,
   message,
+  Divider,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -30,12 +30,16 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import ChatRoom from "./ChatRoom";
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
-const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
+const PropertyDetail = ({
+  token,
+  currentUserId,
+  setIsLoginModalVisible,
+  showChat,
+}) => {
   const { propertyId } = useParams();
   const [property, setProperty] = useState(null);
   const [facilities, setFacilities] = useState([]);
@@ -43,7 +47,6 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
-  const [showChatModal, setShowChatModal] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const navigate = useNavigate();
 
@@ -109,20 +112,26 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
 
   const renderFacilities = useCallback(() => {
     return (
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
         {facilities
           .filter((facility) =>
             property.facility.includes(facility.facilityName)
           )
           .map((facility) => (
-            <Col key={facility.id} span={6}>
+            <Col key={facility.id} span={4}>
               <div style={{ textAlign: "center" }}>
                 <img
                   src={facility.iconUrl}
                   alt={facility.facilityName}
                   style={{ width: 40, height: 40 }}
                 />
-                <Text style={{ display: "block", marginTop: 8, color: "#000" }}>
+                <Text
+                  style={{
+                    marginLeft: "10px",
+                    color: "#000",
+                    fontSize: "16px",
+                  }}
+                >
                   {facility.facilityName}
                 </Text>
               </div>
@@ -134,18 +143,24 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
 
   const renderFeatures = useCallback(() => {
     return (
-      <Row gutter={[16, 16]}>
+      <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
         {features
           .filter((feature) => property.features.includes(feature.featureName))
           .map((feature) => (
-            <Col key={feature.id} span={6}>
+            <Col key={feature.id} span={4}>
               <div style={{ textAlign: "center" }}>
                 <img
                   src={feature.iconUrl}
                   alt={feature.featureName}
                   style={{ width: 40, height: 40 }}
                 />
-                <Text style={{ display: "block", marginTop: 8, color: "#000" }}>
+                <Text
+                  style={{
+                    marginLeft: "10px",
+                    color: "#000",
+                    fontSize: "16px",
+                  }}
+                >
                   {feature.featureName}
                 </Text>
               </div>
@@ -176,7 +191,7 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
 
   const handleContactLandlord = () => {
     if (token) {
-      setShowChatModal(true); // 有登入，跳聊天室
+      showChat(property.landlord_info.landlord_username); // 有登入，跳聊天室
     } else {
       setIsLoginModalVisible(true); // 沒登入，跳登入表單
     }
@@ -214,47 +229,45 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
 
   return (
     <Layout>
-      <Content style={{ padding: "0 50px", background: "#fff" }}>
+      <Content
+        style={{
+          padding: "30px 50px",
+          background: "#fff",
+          maxWidth: "1300px",
+          margin: "20px auto",
+        }}
+      >
         <Button
           icon={<LeftOutlined />}
           onClick={handleGoBack}
-          style={{ margin: "20px 0" }}
+          style={{ marginBottom: "20px" }}
         >
           返回
         </Button>
         <Row gutter={[32, 32]}>
-          <Col xs={24} md={14}>
+          <Col xs={24} lg={16}>
             <div
               style={{
-                textAlign: "center",
-                marginBottom: "24px",
-                backgroundColor: "#f0f0f0", // 灰色背景
+                backgroundColor: "#f0f0f0",
                 padding: "20px",
                 borderRadius: "8px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
               }}
             >
               <div
                 style={{
                   width: "100%",
-                  height: "400px",
+                  marginTop: "30px",
+                  paddingTop: "66.67%", // 3:2 aspect ratio
                   backgroundImage: `url(${property.mainImage})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   cursor: "pointer",
                   borderRadius: "8px",
-                  marginBottom: "10px",
+                  marginBottom: "50px",
                 }}
                 onClick={() => setIsOpen(true)}
               />
-              <Row
-                gutter={[8, 8]}
-                justify="center"
-                style={{ maxWidth: "600px", width: "100%" }}
-              >
+              <Row gutter={[8, 8]} justify="center">
                 {images.slice(0, 5).map((image, index) => (
                   <Col span={4} key={index}>
                     <img
@@ -262,7 +275,7 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
                       alt={`Thumbnail ${index}`}
                       style={{
                         width: "100%",
-                        height: "60px",
+                        aspectRatio: "1 / 1",
                         objectFit: "cover",
                         cursor: "pointer",
                         borderRadius: "4px",
@@ -279,7 +292,7 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
                     <Button
                       style={{
                         width: "100%",
-                        height: "60px",
+                        height: "100%",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -293,63 +306,94 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
               </Row>
             </div>
           </Col>
-          <Col span={8}>
-            <Button
-              type="text"
-              icon={
-                isFavorite ? (
-                  <HeartFilled style={{ color: "red" }} />
-                ) : (
-                  <HeartOutlined />
-                )
-              }
-              onClick={handleFavoriteClick}
+          <Col xs={24} lg={8}>
+            <Card
+              style={{
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+              }}
             >
-              {isFavorite ? "已加入收藏夾" : "加入收藏夾"}
-            </Button>
-            <Title level={3}>{property.title}</Title>
-            <Text>
-              <EnvironmentOutlined />{" "}
-              {`${property.cityName}, ${property.districtName}, ${property.roadName}`}
-              {property.address && `, ${property.address}`}
-            </Text>
-            <div style={{ marginTop: 16 }}>
-              <Title
-                level={3}
-                style={{ display: "inline-block", marginRight: 16 }}
+              <Button
+                type="text"
+                icon={
+                  isFavorite ? (
+                    <HeartFilled style={{ color: "red" }} />
+                  ) : (
+                    <HeartOutlined />
+                  )
+                }
+                onClick={handleFavoriteClick}
               >
-                NT$ {property.price}/月
-              </Title>
-              <Text style={{ fontSize: 16 }}>押金：NT$ {property.deposit}</Text>
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Text style={{ marginRight: 16 }}>
-                <HomeOutlined /> 坪數: {property.area} 坪
+                {isFavorite ? "已加入收藏夾" : "加入收藏夾"}
+              </Button>
+              <Title level={3}>{property.title}</Title>
+              <Text style={{ fontSize: "18px" }}>
+                <EnvironmentOutlined />{" "}
+                {`${property.cityName}, ${property.districtName}, ${property.roadName}`}
+                {property.address && `, ${property.address}`}
               </Text>
-              <Text style={{ marginRight: 16 }}>
-                <TeamOutlined /> 房間數: {property.propertyLayout.roomCount}
-              </Text>
-              <Text style={{ marginRight: 16 }}>
-                <CalendarOutlined /> 租期：{property.rent_period} 個月起
-              </Text>
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Text style={{ marginRight: 16 }}>
-                <ApartmentOutlined /> 樓層: {property.floor} /{" "}
-                {property.total_floor} 樓
-              </Text>
-              <Text style={{ marginRight: 16 }}>
-                <AppstoreOutlined /> 類型: {property.propertyType}
-              </Text>
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Text>
-                <DollarOutlined /> 管理費：
-                {property.management_fee
-                  ? `NT ${property.management_fee}/月`
-                  : "無"}
-              </Text>
-            </div>
+              <div style={{ marginTop: 16 }}>
+                <Title level={2} style={{ marginBottom: 0 }}>
+                  NT$ {property.price}/月
+                </Title>
+                <Text style={{ fontSize: 18 }}>
+                  押金：NT$ {property.deposit}
+                </Text>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontSize: "16px",
+                  }}
+                >
+                  <HomeOutlined /> 坪數: {property.area} 坪
+                </Text>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontSize: "16px",
+                  }}
+                >
+                  <TeamOutlined /> 房間數: {property.propertyLayout.roomCount}
+                </Text>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontSize: "18px",
+                  }}
+                >
+                  <CalendarOutlined /> 租期：{property.rent_period} 個月起
+                </Text>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontSize: "16px",
+                  }}
+                >
+                  <ApartmentOutlined /> 樓層: {property.floor} /{" "}
+                  {property.total_floor} 樓
+                </Text>
+                <Text
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontSize: "16px",
+                  }}
+                >
+                  <AppstoreOutlined /> 類型: {property.propertyType}
+                </Text>
+                <Text style={{ display: "block", fontSize: "16px" }}>
+                  <DollarOutlined /> 管理費：
+                  {property.management_fee
+                    ? `NT ${property.management_fee}/月`
+                    : "無"}
+                </Text>
+              </div>
+            </Card>
 
             <Card
               style={{
@@ -372,6 +416,7 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
                   <Button
                     type="primary"
                     icon={<MessageOutlined />}
+                    style={{ fontFamily: "system-ui", marginRight: 20 }}
                     onClick={handleContactLandlord}
                   >
                     聯繫房東
@@ -381,16 +426,23 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
             </Card>
           </Col>
         </Row>
+        <Divider style={{ borderWidth: "6px" }}></Divider>
 
         <div style={{ marginTop: 24 }}>
           <Title level={3}>房源描述</Title>
-          <Paragraph strong={true}>{property.description}</Paragraph>
+          <Paragraph strong={true} style={{ fontSize: "22px" }}>
+            {property.description}
+          </Paragraph>
         </div>
+
+        <Divider style={{ borderWidth: "6px" }}></Divider>
 
         <div style={{ marginTop: 24 }}>
           <Title level={3}>設施與傢俱</Title>
           {renderFacilities()}
         </div>
+
+        <Divider style={{ borderWidth: "6px" }}></Divider>
 
         <div style={{ marginTop: 24 }}>
           <Title level={3}>特色</Title>
@@ -416,19 +468,6 @@ const PropertyDetail = ({ token, currentUserId, setIsLoginModalVisible }) => {
             scrollToZoom: true,
           }}
         />
-
-        <Modal
-          open={showChatModal}
-          onCancel={() => setShowChatModal(false)}
-          footer={null}
-          width="70%"
-        >
-          <ChatRoom
-            token={token}
-            currentUserId={currentUserId}
-            targetUserId={property.landlord_info.landlord_username}
-          />
-        </Modal>
       </Content>
     </Layout>
   );
