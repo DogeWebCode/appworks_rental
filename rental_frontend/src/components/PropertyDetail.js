@@ -369,7 +369,8 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
                   NT$ {property.price}/月
                 </Title>
                 <Text style={{ fontSize: 18 }}>
-                  押金：NT$ {property.deposit}
+                  押金：
+                  {property.deposit ? `NT$ ${property.deposit}` : "押金面敘"}
                 </Text>
               </div>
               <div style={{ marginTop: 16 }}>

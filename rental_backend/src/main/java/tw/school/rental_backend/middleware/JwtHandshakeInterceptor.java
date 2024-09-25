@@ -35,7 +35,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         return false;
     }
 
-
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Exception exception) {

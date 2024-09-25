@@ -1,5 +1,6 @@
 .favorite-list-container {
   padding: 20px;
+  min-height: 100vh;
 }
 
 .favorite-item {
@@ -14,4 +15,12 @@
   align-items: flex-start;
   gap: 20px;
   margin: 20px;
+}
+
+.ant-descriptions-item-label {
+  width: 30%;
+}
+
+.ant-descriptions-item-content {
+  width: 50%;
 }
