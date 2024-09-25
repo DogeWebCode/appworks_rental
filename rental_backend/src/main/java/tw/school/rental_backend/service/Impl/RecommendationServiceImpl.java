@@ -35,9 +35,9 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 獲取使用者行為記錄
         List<UserAction> userActions = userActionRepository.findByUserId(userId);
 
-        // 如果使用者沒有行為記錄，返回最新的10個房源
+        // 如果使用者沒有行為記錄，返回最新的12個房源
         if (userActions.isEmpty()) {
-            Page<Property> latestPropertiesPage = propertyRepository.findTop10ByOrderByCreatedAtDesc(pageable);
+            Page<Property> latestPropertiesPage = propertyRepository.findTop12ByOrderByCreatedAtDesc(pageable);
             List<PropertyDTO> latestPropertyDTOs = latestPropertiesPage.getContent().stream()
                     .map(propertyMapper::PropertyConvertToDTO)
                     .collect(Collectors.toList());
@@ -70,6 +70,8 @@ public class RecommendationServiceImpl implements RecommendationService {
             propertyScore.put(propertyId, propertyScore.getOrDefault(propertyId, 0) + score);
 
         }
+        log.info("viewedDistricts: " + viewedDistricts);
+        log.info("viewedCities: " + viewedCities);
         log.info("Property score: " + propertyScore);
 
         // 計算平均價格，並設置價格範圍
@@ -110,10 +112,10 @@ public class RecommendationServiceImpl implements RecommendationService {
         Page<Property> recommendedPropertiesPage = propertyRepository.findByIdIn(sortedPropertyIds, pageable);
         List<Property> recommendedProperties = recommendedPropertiesPage.getContent();
 
-        // 如果推薦結果不足10個，補充房源
-        if (recommendedProperties.size() < 10) {
+        // 如果推薦結果不足12個，補充房源
+        if (recommendedProperties.size() < 12) {
             List<Property> additionalProperties = propertyRepository
-                    .findTop10ByPriceBetweenOrderByCreatedAtDesc(priceLowerBound, priceUpperBound, pageable)
+                    .findTop12ByPriceBetweenOrderByCreatedAtDesc(priceLowerBound, priceUpperBound, pageable)
                     .getContent();
             for (Property property : additionalProperties) {
                 if (!recommendedProperties.contains(property)) {
@@ -133,9 +135,9 @@ public class RecommendationServiceImpl implements RecommendationService {
     private int calculateScoreForAction(UserAction action) {
         // 根據行為類型進行加權
         return switch (action.getActionType()) {
-            case "VIEW" -> 1;
-            case "FAVORITE" -> 5;
-            case "CONTACT" -> 10;
+            case "view" -> 1;
+            case "favorite" -> 5;
+            case "contact" -> 10;
             default -> 0;
         };
     }

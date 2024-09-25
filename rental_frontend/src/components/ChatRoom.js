@@ -305,9 +305,7 @@ const ChatRoom = ({ token, currentUserId, targetUserId: propTargetUserId }) => {
                 : "?"}
             </Avatar>
             <Typography variant="h6">
-              {targetUserName
-                ? `與 ${targetUserName} 聊天中`
-                : `與 ${propTargetUserId} 聊天中`}
+              {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
             </Typography>
           </ChatHeader>
           <Divider />

@@ -18,9 +18,9 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
 
     Page<Property> findByIdIn(List<Long> id, Pageable pageable);
 
-    Page<Property> findTop10ByOrderByCreatedAtDesc(Pageable pageable);
+    Page<Property> findTop12ByOrderByCreatedAtDesc(Pageable pageable);
 
-    Page<Property> findTop10ByPriceBetweenOrderByCreatedAtDesc(int priceLowerBound, int priceUpperBound, Pageable pageable);
+    Page<Property> findTop12ByPriceBetweenOrderByCreatedAtDesc(int priceLowerBound, int priceUpperBound, Pageable pageable);
 
     @Query("SELECT p FROM Property p WHERE p.city.cityName IN :cityNames AND p.district.districtName IN :districtNames AND p.price BETWEEN :priceLowerBound AND :priceUpperBound")
     Page<Property> findByCityAndDistrictNamesAndPriceBetween(@Param("cityNames") Set<String> cityNames,

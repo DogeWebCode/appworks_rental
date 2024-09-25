@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { List, Button, message, Typography, Image, Descriptions } from "antd";
 import { useNavigate } from "react-router-dom";
-import "../FavoriteList.css"; // 用來自定義樣式
+import "../FavoriteList.css";
 
 const { Title } = Typography;
 
@@ -71,7 +71,9 @@ const FavoriteList = ({ token, setIsLoginModalVisible }) => {
 
   return (
     <div className="favorite-list-container">
-      <Title level={2}>我的收藏</Title>
+      <Title level={2} style={{ fontFamily: "system-ui" }}>
+        我的收藏
+      </Title>
       <List
         loading={loading}
         itemLayout="vertical"
@@ -84,6 +86,7 @@ const FavoriteList = ({ token, setIsLoginModalVisible }) => {
                 type="primary"
                 danger
                 onClick={() => handleRemoveFavorite(item.propertyId)}
+                style={{ marginLeft: "20px" }}
               >
                 移除
               </Button>,
@@ -95,17 +98,24 @@ const FavoriteList = ({ token, setIsLoginModalVisible }) => {
                 height={130}
                 src={item.mainImage}
                 alt={item.title}
-                style={{ borderRadius: "8px", objectFit: "cover" }}
+                style={{
+                  borderRadius: "8px",
+                  objectFit: "cover",
+                }}
                 onClick={() => handlePropertyClick(item.propertyId)}
               />
-              {/* 房源資訊 Descriptions 組件，使用 size="small" 來縮小表格 */}
+
               <Descriptions
                 title={item.title}
-                layout="vertical"
+                layout="horizontal"
                 bordered
                 column={1}
-                size="small"
-                style={{ marginLeft: "20px", width: "100%" }}
+                size="middle"
+                style={{
+                  marginLeft: "20px",
+                  marginRight: "20px",
+                  width: "100%",
+                }}
               >
                 <Descriptions.Item label="地址">
                   {`${item.cityName} ${item.districtName} ${item.roadName}`}

@@ -34,12 +34,7 @@ import "yet-another-react-lightbox/plugins/thumbnails.css";
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
-const PropertyDetail = ({
-  token,
-  currentUserId,
-  setIsLoginModalVisible,
-  showChat,
-}) => {
+const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
   const { propertyId } = useParams();
   const [property, setProperty] = useState(null);
   const [facilities, setFacilities] = useState([]);
@@ -112,22 +107,34 @@ const PropertyDetail = ({
 
   const renderFacilities = useCallback(() => {
     return (
-      <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
+      <Row gutter={[16, 16]}>
         {facilities
           .filter((facility) =>
             property.facility.includes(facility.facilityName)
           )
           .map((facility) => (
-            <Col key={facility.id} span={4}>
-              <div style={{ textAlign: "center" }}>
+            <Col key={facility.id} xs={24} sm={12} md={8} lg={4}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "2px",
+                  height: "100%",
+                }}
+              >
                 <img
                   src={facility.iconUrl}
-                  alt={facility.facilityName}
-                  style={{ width: 40, height: 40 }}
+                  alt={facility.featureName}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    marginRight: 12,
+                    flexShrink: 0,
+                  }}
                 />
                 <Text
                   style={{
-                    marginLeft: "10px",
+                    marginLeft: "4px",
                     color: "#000",
                     fontSize: "16px",
                   }}
@@ -143,22 +150,34 @@ const PropertyDetail = ({
 
   const renderFeatures = useCallback(() => {
     return (
-      <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
+      <Row gutter={[16, 16]}>
         {features
           .filter((feature) => property.features.includes(feature.featureName))
           .map((feature) => (
-            <Col key={feature.id} span={4}>
-              <div style={{ textAlign: "center" }}>
+            <Col key={feature.id} xs={24} sm={12} md={8} lg={4}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "2px",
+                  height: "100%",
+                }}
+              >
                 <img
                   src={feature.iconUrl}
                   alt={feature.featureName}
-                  style={{ width: 40, height: 40 }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    marginRight: 12,
+                    flexShrink: 0,
+                  }}
                 />
                 <Text
                   style={{
-                    marginLeft: "10px",
                     color: "#000",
                     fontSize: "16px",
+                    lineHeight: 1.4,
                   }}
                 >
                   {feature.featureName}
@@ -227,6 +246,19 @@ const PropertyDetail = ({
     }
   };
 
+  const formatDescription = (description) => {
+    // 將文字按照句號或問號分割
+    const sentences = description.split(/(?<=[。？])/);
+
+    // 將句子組合成段落，每3-5個句子一個段落
+    const paragraphs = [];
+    for (let i = 0; i < sentences.length; i += 4) {
+      paragraphs.push(sentences.slice(i, i + 4).join(""));
+    }
+
+    return paragraphs;
+  };
+
   return (
     <Layout>
       <Content
@@ -245,18 +277,19 @@ const PropertyDetail = ({
           返回
         </Button>
         <Row gutter={[32, 32]}>
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={12}>
             <div
               style={{
                 backgroundColor: "#f0f0f0",
                 padding: "20px",
                 borderRadius: "8px",
+                height: "100%",
               }}
             >
               <div
                 style={{
                   width: "100%",
-                  marginTop: "30px",
+                  marginTop: "100px",
                   paddingTop: "66.67%", // 3:2 aspect ratio
                   backgroundImage: `url(${property.mainImage})`,
                   backgroundSize: "cover",
@@ -306,7 +339,7 @@ const PropertyDetail = ({
               </Row>
             </div>
           </Col>
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={12}>
             <Card
               style={{
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
@@ -362,7 +395,7 @@ const PropertyDetail = ({
                   style={{
                     display: "block",
                     marginBottom: 8,
-                    fontSize: "18px",
+                    fontSize: "16px",
                   }}
                 >
                   <CalendarOutlined /> 租期：{property.rent_period} 個月起
@@ -384,12 +417,12 @@ const PropertyDetail = ({
                     fontSize: "16px",
                   }}
                 >
-                  <AppstoreOutlined /> 類型: {property.propertyType}
+                  <AppstoreOutlined /> 房型: {property.propertyType}
                 </Text>
                 <Text style={{ display: "block", fontSize: "16px" }}>
                   <DollarOutlined /> 管理費：
                   {property.management_fee
-                    ? `NT ${property.management_fee}/月`
+                    ? `NT$ ${property.management_fee}/月`
                     : "無"}
                 </Text>
               </div>
@@ -416,7 +449,7 @@ const PropertyDetail = ({
                   <Button
                     type="primary"
                     icon={<MessageOutlined />}
-                    style={{ fontFamily: "system-ui", marginRight: 20 }}
+                    style={{ fontFamily: "system-ui" }}
                     onClick={handleContactLandlord}
                   >
                     聯繫房東
@@ -430,9 +463,20 @@ const PropertyDetail = ({
 
         <div style={{ marginTop: 24 }}>
           <Title level={3}>房源描述</Title>
-          <Paragraph strong={true} style={{ fontSize: "22px" }}>
-            {property.description}
-          </Paragraph>
+          {formatDescription(property.description).map((paragraph, index) => (
+            <Paragraph
+              key={index}
+              strong={true}
+              style={{
+                fontSize: "18px",
+                lineHeight: "1.6",
+                marginBottom: "16px",
+                textAlign: "justify",
+              }}
+            >
+              {paragraph}
+            </Paragraph>
+          ))}
         </div>
 
         <Divider style={{ borderWidth: "6px" }}></Divider>

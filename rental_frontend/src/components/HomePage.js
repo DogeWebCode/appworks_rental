@@ -316,9 +316,9 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
         <Card.Meta
           title={
             <Tooltip title={property.title}>
-              {property.title.length > 20
+              {property.title && property.title.length > 20
                 ? `${property.title.substring(0, 20)}...`
-                : property.title}
+                : property.title || "未提供標題"}
             </Tooltip>
           }
           description={
@@ -360,11 +360,12 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
               <Tag color="orange">{property.propertyType}</Tag>
               <Tag color="orange">{property.buildingType}</Tag>
               <div style={{ marginTop: 8 }}>
-                {property.features.slice(0, 3).map((feature, index) => (
-                  <Tag key={index} style={{ marginBottom: 4 }}>
-                    {feature}
-                  </Tag>
-                ))}
+                {property.features &&
+                  property.features.slice(0, 3).map((feature, index) => (
+                    <Tag key={index} style={{ marginBottom: 4 }}>
+                      {feature}
+                    </Tag>
+                  ))}
                 {property.features.length > 3 && (
                   <Tag style={{ marginBottom: 4 }}>
                     +{property.features.length - 3}

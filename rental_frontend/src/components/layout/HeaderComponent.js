@@ -101,7 +101,7 @@ const HeaderComponent = ({
       >
         <div
           style={{
-            width: "98%",
+            width: "97.5%",
             margin: "0 auto",
             display: "flex",
             justifyContent: "space-between",
@@ -151,14 +151,14 @@ const HeaderComponent = ({
                   style={{ fontFamily: "system-ui" }}
                   onClick={handleFavoriteClick}
                 >
-                  房源收藏夾
+                  收藏夾
                 </Button>
                 {/* 聊天室圖示 */}
                 <Button
                   type="link"
                   icon={<MessageOutlined />}
                   style={{ fontFamily: "system-ui", marginRight: 20 }}
-                  onClick={handleChatClick} // 使用 handleChatClick
+                  onClick={handleChatClick}
                 >
                   聊天室
                 </Button>
