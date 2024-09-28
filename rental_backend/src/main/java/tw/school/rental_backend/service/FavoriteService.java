@@ -1,7 +1,6 @@
 package tw.school.rental_backend.service;
 
 import tw.school.rental_backend.data.dto.FavoriteDTO;
-import tw.school.rental_backend.model.user.Favorite;
 
 import java.util.List;
 

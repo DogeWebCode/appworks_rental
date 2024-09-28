@@ -46,9 +46,8 @@ public class UserActionServiceImpl implements UserActionService {
         // 創建 DTO，避免將整個 Property 實體存儲到 Redis
         UserActionDTO userActionDTO = new UserActionDTO(user.getId(), property.getId(), actionType, LocalDateTime.now());
 
-        // 確認數據類型並記錄到日誌
+        // 記錄新的操作到 Redis
         log.info("Storing action in Redis: " + userActionDTO);
-
         redisTemplate.opsForList().rightPush(cacheKey, userActionDTO);
     }
 
@@ -101,10 +100,33 @@ public class UserActionServiceImpl implements UserActionService {
     }
 
 
-    // 使用者取消收藏時要刪除
     @Override
     @Transactional
     public void removeFavoriteAction(Long userId, Long propertyId) {
+        // 刪除 MySQL 中的記錄
         userActionRepository.deleteByUserIdAndPropertyIdAndActionType(userId, propertyId, "favorite");
+
+        // 刪除 Redis 中的記錄
+        String cacheKey = USER_ACTION_CACHE_PREFIX + userId + "::" + propertyId;
+
+        // 檢查 Redis 中是否存在該鍵
+        List<Object> actions = redisTemplate.opsForList().range(cacheKey, 0, -1);
+        if (actions != null && !actions.isEmpty()) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule()); // 支援 LocalDateTime
+
+            for (Object actionObj : actions) {
+                if (actionObj instanceof LinkedHashMap) {
+                    UserActionDTO actionDTO = objectMapper.convertValue(actionObj, UserActionDTO.class);
+
+                    // 如果找到「收藏」操作，將其從 Redis 中刪除
+                    if ("favorite".equals(actionDTO.getActionType())) {
+                        redisTemplate.opsForList().remove(cacheKey, 1, actionObj); // 刪除符合條件的記錄
+                        log.info("Removed favorite action from Redis for user: " + userId + " and property: " + propertyId);
+                    }
+                }
+            }
+        }
     }
+
 }

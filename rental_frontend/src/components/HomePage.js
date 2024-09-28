@@ -11,6 +11,7 @@ import {
   Typography,
   Pagination,
   Select,
+  Space,
 } from "antd";
 import { ReloadOutlined, SmileOutlined, HomeOutlined } from "@ant-design/icons";
 import MainLayout from "./layout/MainLayout";
@@ -36,34 +37,59 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     isRecommendationFromParams
   );
 
+  const handleSort = (newSortBy) => {
+    let newSortDirection = sortDirection;
+    if (newSortBy === sortBy) {
+      // 如果點擊同一個排序選項，切換排序方向
+      newSortDirection = sortDirection === "asc" ? "desc" : "asc";
+    } else {
+      // 如果是新的排序選項，默認為升序
+      newSortDirection = "asc";
+    }
+
+    setSortBy(newSortBy);
+    setSortDirection(newSortDirection);
+    searchParams.set("sortBy", newSortBy);
+    searchParams.set("sortDirection", newSortDirection);
+    searchParams.set("page", 0);
+    setSearchParams(searchParams);
+  };
+
   const [selectedCity, setSelectedCity] = useState(
-    searchParams.get("city") || null
+    () => searchParams.get("city") || null
   );
   const [selectedDistrict, setSelectedDistrict] = useState(
-    searchParams.get("district") || null
+    () => searchParams.get("district") || null
   );
   const [selectedRoad, setSelectedRoad] = useState(
-    searchParams.get("road") || null
+    () => searchParams.get("road") || null
   );
-  const [minPrice, setMinPrice] = useState(
+  const [minPrice, setMinPrice] = useState(() =>
     searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")) : null
   );
-  const [maxPrice, setMaxPrice] = useState(
+  const [maxPrice, setMaxPrice] = useState(() =>
     searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")) : null
   );
-  const [selectedFacilities, setSelectedFacilities] = useState(
+  const [selectedFacilities, setSelectedFacilities] = useState(() =>
     searchParams.get("facility") ? searchParams.get("facility").split(",") : []
   );
-  const [selectedFeatures, setSelectedFeatures] = useState(
+  const [selectedFeatures, setSelectedFeatures] = useState(() =>
     searchParams.get("feature") ? searchParams.get("feature").split(",") : []
   );
-  const [page, setPage] = useState(
+  const [page, setPage] = useState(() =>
     searchParams.get("page") ? parseInt(searchParams.get("page")) : 0
+  );
+  const [sortBy, setSortBy] = useState(
+    () => searchParams.get("sortBy") || "createdAt"
+  );
+  const [sortDirection, setSortDirection] = useState(
+    () => searchParams.get("sortDirection") || "desc"
   );
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
+        const queryParams = new URLSearchParams(searchParams);
         if (isRecommendation) {
           const response = await fetch("/api/property/recommendation", {
             headers: {
@@ -74,8 +100,10 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
           setProperties(data.data);
           setTotalElements(data.totalElements);
         } else {
-          // 普通房源搜索
-          const queryParams = new URLSearchParams(searchParams);
+          queryParams.delete("sortBy"); // 先刪除之前的值
+          queryParams.append("sortBy", sortBy);
+          queryParams.delete("sortDirection"); // 先刪除之前的值
+          queryParams.append("sortDirection", sortDirection);
           const response = await fetch(
             `/api/property/search?${queryParams.toString()}`
           );
@@ -89,7 +117,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     };
 
     fetchProperties();
-  }, [searchParams, isRecommendation, token]);
+  }, [searchParams, isRecommendation, token, sortBy, sortDirection]);
 
   // 把縣市讀進來
   useEffect(() => {
@@ -381,195 +409,183 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
 
   return (
     <MainLayout>
-      <div
+      <Row
+        justify="center"
+        align="middle"
         style={{
-          position: "relative",
-          height: "450px",
-          backgroundImage: 'url("/image/house.jpg")',
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          marginBottom: "20px",
+          minHeight: "500px",
+          background: 'url("/image/house.jpg") center/cover no-repeat',
         }}
       >
-        {/* 搜尋表單懸浮在大圖上 */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            padding: "20px",
-            borderRadius: "10px",
-            width: "100%",
-            maxWidth: "900px",
-          }}
-        >
-          <Title level={2} style={{ fontWeight: 600, color: "#333" }}>
-            探索理想的租屋選擇
-          </Title>
-          <Title level={5} style={{ color: "#666" }}>
-            輕鬆篩選符合您需求的房源，開始您的租屋旅程
-          </Title>
-          <div style={{ marginTop: 24 }}>
-            <Row gutter={16} align="middle">
-              {/* 縣市選單 */}
-              <Col span={5}>
-                <Select
-                  placeholder="選擇縣市"
-                  style={{ width: "100%" }}
-                  onChange={handleCityChange}
-                  value={selectedCity}
-                >
-                  {cities.map((city) => (
-                    <Option key={city.id} value={city.cityName}>
-                      {city.cityName}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
+        <Col xs={24} sm={22} md={20} lg={18} xl={16}>
+          <Card
+            style={{
+              background: "rgba(255, 255, 255, 0.95)",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.1)",
+            }}
+          >
+            <Space direction="vertical" size="small" style={{ width: "100%" }}>
+              <Title
+                level={3}
+                style={{
+                  fontWeight: 700,
+                  color: "#333",
+                  marginBottom: 0,
+                  marginTop: 12,
+                }}
+              >
+                探索理想的租屋選擇
+              </Title>
+              <Title
+                level={5}
+                style={{ fontWeight: 700, color: "#666", marginTop: 8 }}
+              >
+                輕鬆篩選符合您需求的房源，開始您的租屋旅程
+              </Title>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <Select
+                    placeholder="選擇縣市"
+                    style={{ width: "100%" }}
+                    onChange={handleCityChange}
+                    value={selectedCity}
+                  >
+                    {cities.map((city) => (
+                      <Option key={city.id} value={city.cityName}>
+                        {city.cityName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Select
+                    placeholder="選擇區域"
+                    style={{ width: "100%" }}
+                    onChange={handleDistrictChange}
+                    value={selectedDistrict}
+                    disabled={!selectedCity}
+                  >
+                    {districts.map((district) => (
+                      <Option key={district.id} value={district.districtName}>
+                        {district.districtName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Select
+                    placeholder="選擇道路"
+                    style={{ width: "100%" }}
+                    onChange={handleRoadChange}
+                    value={selectedRoad}
+                    disabled={!selectedDistrict}
+                  >
+                    {roads.map((road) => (
+                      <Option key={road.id} value={road.roadName}>
+                        {road.roadName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    placeholder="最低價格"
+                    min={0}
+                    step={1000}
+                    onChange={handleMinPriceChange}
+                    formatter={(value) =>
+                      `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(value) => value.replace(/NT\$\s?|(,*)/g, "")}
+                    value={minPrice}
+                  />
+                </Col>
+                <Col xs={24} sm={12}>
+                  <InputNumber
+                    style={{ width: "100%" }}
+                    placeholder="最高價格"
+                    min={0}
+                    step={1000}
+                    onChange={handleMaxPriceChange}
+                    formatter={(value) =>
+                      `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    }
+                    parser={(value) => value.replace(/NT\$\s?|(,*)/g, "")}
+                    value={maxPrice}
+                  />
+                </Col>
+                <Col xs={24}>
+                  <Select
+                    mode="multiple"
+                    placeholder="選擇設備"
+                    style={{ width: "100%" }}
+                    onChange={handleFacilitiesChange}
+                    value={selectedFacilities}
+                  >
+                    {facilities.map((facility) => (
+                      <Option key={facility.id} value={facility.facilityName}>
+                        {facility.facilityName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24}>
+                  <Select
+                    mode="multiple"
+                    placeholder="選擇特色"
+                    style={{ width: "100%" }}
+                    onChange={handleFeaturesChange}
+                    value={selectedFeatures}
+                  >
+                    {features.map((feature) => (
+                      <Option key={feature.id} value={feature.featureName}>
+                        {feature.featureName}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
 
-              {/* 區域選單 */}
-              <Col span={5}>
-                <Select
-                  placeholder="選擇區域"
-                  style={{ width: "100%" }}
-                  onChange={handleDistrictChange}
-                  value={selectedDistrict}
-                  disabled={!selectedCity}
-                >
-                  {districts.map((district) => (
-                    <Option key={district.id} value={district.districtName}>
-                      {district.districtName}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-
-              {/* 道路選單 */}
-              <Col span={5}>
-                <Select
-                  placeholder="選擇道路"
-                  style={{ width: "100%" }}
-                  onChange={handleRoadChange}
-                  value={selectedRoad}
-                  disabled={!selectedDistrict}
-                >
-                  {roads.map((road) => (
-                    <Option key={road.id} value={road.roadName}>
-                      {road.roadName}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-
-              {/* 價格輸入 */}
-              <Col span={4}>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="最低價格"
-                  min={0}
-                  step={1000}
-                  onChange={handleMinPriceChange}
-                  formatter={(value) =>
-                    `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/NT\$\s?|(,*)/g, "")}
-                  value={minPrice}
-                />
-              </Col>
-
-              <Col span={4}>
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="最高價格"
-                  min={0}
-                  step={1000}
-                  onChange={handleMaxPriceChange}
-                  formatter={(value) =>
-                    `NT$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/NT\$\s?|(,*)/g, "")}
-                  value={maxPrice}
-                />
-              </Col>
-            </Row>
-
-            {/* 設備多選 */}
-            <Row style={{ marginTop: 24 }}>
-              <Col span={24}>
-                <Select
-                  mode="multiple"
-                  placeholder="選擇設備"
-                  style={{ width: "100%" }}
-                  onChange={handleFacilitiesChange}
-                  value={selectedFacilities}
-                >
-                  {facilities.map((facility) => (
-                    <Option key={facility.id} value={facility.facilityName}>
-                      {facility.facilityName}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-            </Row>
-
-            {/* 特色多選 */}
-            <Row style={{ marginTop: 24 }}>
-              <Col span={24}>
-                <Select
-                  mode="multiple"
-                  placeholder="選擇特色"
-                  style={{ width: "100%", marginTop: 10 }}
-                  onChange={handleFeaturesChange}
-                  value={selectedFeatures}
-                >
-                  {features.map((feature) => (
-                    <Option key={feature.id} value={feature.featureName}>
-                      {feature.featureName}
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-            </Row>
-
-            {/* 清除搜尋條件按鈕 */}
-            <Row style={{ marginTop: 16 }}>
-              <Col span={24}>
-                <Button
-                  type="primary"
-                  icon={<ReloadOutlined />}
-                  style={{ width: "100%" }}
-                  onClick={handleClearFilters}
-                  danger
-                >
-                  重置搜尋條件
-                </Button>
-              </Col>
-            </Row>
-            {/* 在搜尋表單下方添加推薦房源按鈕 */}
-            <Row style={{ marginTop: 16 }}>
-              <Col span={24}>
-                <Button
-                  type="primary"
-                  style={{ width: "100%" }}
-                  onClick={handleRecommendation}
-                  icon={<HomeOutlined />}
-                >
-                  推薦房源
-                </Button>
-              </Col>
-            </Row>
-          </div>
-        </div>
-      </div>
+                <Col xs={24} sm={12}>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    style={{
+                      width: "100%",
+                      background: "linear-gradient(to right, #f5a623, #f7b733)",
+                      borderColor: "#f5a623",
+                      color: "white",
+                    }}
+                    onClick={handleClearFilters}
+                  >
+                    重置搜尋條件
+                  </Button>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Button
+                    icon={<HomeOutlined />}
+                    style={{
+                      width: "100%",
+                      background: "linear-gradient(to right, #4a90e2, #5ca0f2)",
+                      borderColor: "#4a90e2",
+                      color: "white",
+                    }}
+                    onClick={handleRecommendation}
+                  >
+                    推薦房源
+                  </Button>
+                </Col>
+              </Row>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
 
       {/* 房源顯示區域 */}
       <div
         style={{
-          background: "#fff",
+          background: "#f0f2f5",
           padding: 24,
-          maxWidth: 1300,
+          maxWidth: 1400,
           margin: "0 auto",
         }}
       >
@@ -597,6 +613,28 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
           </div>
         ) : (
           <>
+            <Row
+              gutter={[16, 16]}
+              style={{
+                padding: 8,
+              }}
+            >
+              <Col>
+                <Button onClick={() => handleSort("price")}>
+                  租金排序{" "}
+                  {sortBy === "price" &&
+                    (sortDirection === "asc" ? "低" : "高")}
+                </Button>
+              </Col>
+              <Col>
+                <Button onClick={() => handleSort("createdAt")}>
+                  上架時間{" "}
+                  {sortBy === "createdAt" &&
+                    (sortDirection === "asc" ? "早" : "晚")}
+                </Button>
+              </Col>
+            </Row>
+
             <Row gutter={[16, 16]}>
               {properties.map((property) => (
                 <Col xs={24} sm={12} md={8} lg={8} xl={6} key={property.id}>

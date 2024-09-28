@@ -124,7 +124,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             }
         }
 
-        // 將推薦結果轉換成 DTO 並返回
+        // 將推薦結果轉換成 DTO
         List<PropertyDTO> propertyDTOs = recommendedProperties.stream()
                 .map(propertyMapper::PropertyConvertToDTO)
                 .collect(Collectors.toList());

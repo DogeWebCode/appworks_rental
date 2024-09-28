@@ -40,7 +40,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 })
                 .setAllowedOrigins(allowedOrigins)
                 .withSockJS()
-                .setSessionCookieNeeded(false); // 禁用來源檢查
+                .setWebSocketEnabled(true)
+                .setSessionCookieNeeded(false)
+                .setHeartbeatTime(25000);
     }
 
     @Override

@@ -2,7 +2,9 @@ package tw.school.rental_backend.controller;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,12 +49,24 @@ public class PropertyController {
             @RequestParam(required = false) Integer maxPrice,
             @RequestParam(required = false) String[] feature,
             @RequestParam(required = false) String[] facility,
-            @PageableDefault(sort = "createdAt", size = 12) Pageable pageable) {
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false, defaultValue = "desc") String sortDirection,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 12) Pageable pageable) {
 
         try {
-            // 這裡 return Page<PropertyDTO>
+            Sort sort;
+            if (sortBy != null && !sortBy.isEmpty()) {
+                Sort.Direction direction = Sort.Direction.fromString(sortDirection);
+                sort = Sort.by(direction, sortBy);
+            } else {
+                // 使用默認排序
+                sort = Sort.by(Sort.Direction.DESC, "createdAt");
+            }
+
+            Pageable pageableWithSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
             Page<PropertyDTO> propertyPage = propertyService.filterProperties(
-                    city, district, road, minPrice, maxPrice, feature, facility, pageable);
+                    city, district, road, minPrice, maxPrice, feature, facility, pageableWithSort);
 
             // 拿資料
             List<PropertyDTO> propertyDTOs = propertyPage.getContent();

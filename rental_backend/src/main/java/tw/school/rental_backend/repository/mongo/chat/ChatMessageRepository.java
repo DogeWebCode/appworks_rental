@@ -17,4 +17,10 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
     @Query("{ $or: [ { 'senderId': ?0 }, { 'receiverId': ?0 } ] }")
     List<ChatMessage> findChatPartners(String currentUserId);
 
+    @Query("{'receiverId': ?0, 'isRead': false}")
+    List<ChatMessage> findUnreadMessagesByReceiverId(String receiverId);
+
+    @Query("{ $or: [ { $and: [ { 'senderId': ?0 }, { 'receiverId': ?1 }, { 'isRead': false } ] }, { $and: [ { 'receiverId': ?0 }, { 'senderId': ?1 }, { 'isRead': false } ] } ] }")
+    List<ChatMessage> findUnreadMessagesBetweenUsers(String currentUserId, String partnerId);
+
 }

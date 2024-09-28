@@ -11,6 +11,9 @@ import tw.school.rental_backend.service.PropertyService;
 import tw.school.rental_backend.service.UserActionService;
 import tw.school.rental_backend.service.UserService;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/user-action")
 public class UserActionController {
@@ -34,7 +37,10 @@ public class UserActionController {
 
         userActionService.recordUserAction(user, property, request.getActionType());
 
-        return ResponseEntity.ok().body("紀錄 " + user.getId() + " 的 " + request.getActionType() + " 動作成功");
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "使用者動作紀錄成功");
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{propertyId}")
@@ -44,7 +50,10 @@ public class UserActionController {
 
         userActionService.removeFavoriteAction(user.getId(), propertyId);
 
-        return ResponseEntity.ok().body("成功刪除" + user.getUsername() + "的" + propertyId + "收藏紀錄");
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "刪除使用者收藏紀錄成功");
+
+        return ResponseEntity.ok(response);
     }
 
 

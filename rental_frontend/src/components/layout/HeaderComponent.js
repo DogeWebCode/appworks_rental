@@ -8,14 +8,21 @@ import {
   Form,
   Input,
   message,
+  Badge,
+  Dropdown,
+  Menu,
+  Row,
+  Col,
 } from "antd";
 import {
   LogoutOutlined,
   LoginOutlined,
   MessageOutlined,
+  HeartOutlined,
+  UserOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import ChatRoom from "../ChatRoom";
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -27,11 +34,9 @@ const HeaderComponent = ({
   onLogout,
   isLoginModalVisible,
   setIsLoginModalVisible,
-  isChatVisible,
   setIsChatVisible,
   setChatTargetUser,
-  chatTargetUser,
-  hideChat,
+  totalUnreadCount,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -87,140 +92,156 @@ const HeaderComponent = ({
     setIsChatVisible(true);
   };
 
-  return (
-    <>
-      <Header
-        style={{
-          background: "#fff",
-          padding: 0,
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          zIndex: 1000,
-          position: "relative",
-          borderBottom: "2px solid #f0f0f0",
-        }}
+  const menu = (
+    <Menu>
+      <Menu.Item key="profile" icon={<UserOutlined />}>
+        個人資料
+      </Menu.Item>
+      <Menu.Item
+        key="favorites"
+        icon={<HeartOutlined />}
+        onClick={handleFavoriteClick}
       >
-        <div
-          style={{
-            width: "97.5%",
-            margin: "0 auto",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 16px",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)", // 背景漸變
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <Avatar
-              src="/shiba-logo.png"
-              size="large"
-              style={{
-                marginRight: 8,
-                cursor: "pointer",
-                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-              }}
-              onClick={handleLogoClick}
-            />
-            <Title
-              level={3}
-              style={{
-                margin: 0,
-                cursor: "pointer",
-                color: "#333",
-                textShadow: "1px 1px 3px rgba(0, 0, 0, 0.2)",
-                fontFamily: "system-ui",
-              }}
-              onClick={handleLogoClick}
-            >
-              柴好租
-            </Title>
-          </div>
-          <div>
+        收藏夾
+      </Menu.Item>
+      <Menu.Item
+        key="chat"
+        icon={<MessageOutlined />}
+        onClick={handleChatClick}
+      >
+        聊天室
+        <Badge count={totalUnreadCount} offset={[5, -5]} size="small" />
+      </Menu.Item>
+      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
+        登出
+      </Menu.Item>
+    </Menu>
+  );
+
+  return (
+    <Header
+      style={{
+        background: "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)", // 背景漸變
+        padding: "0 16px",
+        boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
+        borderRadius: "8px 0",
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+      }}
+    >
+      <Row align="middle" justify="space-between">
+        <Col>
+          <Row align="middle" gutter={8}>
+            <Col>
+              <Avatar
+                src="/shiba-logo.png"
+                size="large"
+                style={{
+                  marginRight: 8,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                }}
+                onClick={handleLogoClick}
+              />
+            </Col>
+            <Col>
+              <Title
+                level={3}
+                style={{
+                  margin: 0,
+                  cursor: "pointer",
+                  color: "#333",
+
+                  fontFamily: "system-ui",
+                }}
+                onClick={handleLogoClick}
+              >
+                柴好租
+              </Title>
+            </Col>
+          </Row>
+        </Col>
+        {token && (
+          <Col flex="auto" style={{ textAlign: "end", marginRight: 12 }}>
+            <span style={{ fontFamily: "system-ui", fontSize: "16px" }}>
+              歡迎回來，{currentUserId}
+            </span>
+          </Col>
+        )}
+        <Col>
+          <Row align="middle" gutter={16}>
             {token ? (
               <>
-                <span style={{ marginRight: 20, fontFamily: "system-ui" }}>
-                  歡迎回來，{currentUserId}
-                </span>
-                <Button type="link" style={{ fontFamily: "system-ui" }}>
-                  個人資料
-                </Button>
-                <Button
-                  type="link"
-                  style={{ fontFamily: "system-ui" }}
-                  onClick={handleFavoriteClick}
-                >
-                  收藏夾
-                </Button>
-                {/* 聊天室圖示 */}
-                <Button
-                  type="link"
-                  icon={<MessageOutlined />}
-                  style={{ fontFamily: "system-ui", marginRight: 20 }}
-                  onClick={handleChatClick}
-                >
-                  聊天室
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<LogoutOutlined />}
-                  danger
-                  onClick={onLogout}
-                >
-                  登出
-                </Button>
+                <Col xs={0} md={24}>
+                  <Row gutter={16}>
+                    <Col>
+                      <Button
+                        type="link"
+                        style={{ fontFamily: "system-ui" }}
+                        icon={<UserOutlined />}
+                      >
+                        個人資料
+                      </Button>
+                    </Col>
+                    <Col>
+                      <Button
+                        type="link"
+                        style={{ fontFamily: "system-ui" }}
+                        onClick={handleFavoriteClick}
+                        icon={<HeartOutlined />}
+                      >
+                        收藏夾
+                      </Button>
+                    </Col>
+                    <Col>
+                      <Button
+                        type="link"
+                        style={{ fontFamily: "system-ui", marginRight: 10 }}
+                        onClick={handleChatClick}
+                      >
+                        <Badge
+                          count={totalUnreadCount}
+                          offset={[5, -5]}
+                          size="small"
+                        >
+                          <MessageOutlined style={{ color: "#1677FF" }} />
+                        </Badge>
+                        聊天室
+                      </Button>
+                    </Col>
+                    <Col>
+                      <Button
+                        type="primary"
+                        icon={<LogoutOutlined />}
+                        danger
+                        onClick={onLogout}
+                      >
+                        登出
+                      </Button>
+                    </Col>
+                  </Row>
+                </Col>
+                <Col xs={24} md={0}>
+                  <Dropdown overlay={menu} placement="bottomRight">
+                    <Button icon={<MenuOutlined />} />
+                  </Dropdown>
+                </Col>
               </>
             ) : (
-              <Button
-                type="primary"
-                onClick={handleLoginClick}
-                icon={<LoginOutlined />}
-              >
-                登入
-              </Button>
+              <Col>
+                <Button
+                  type="primary"
+                  onClick={handleLoginClick}
+                  icon={<LoginOutlined />}
+                >
+                  登入
+                </Button>
+              </Col>
             )}
-          </div>
-        </div>
-      </Header>
-
-      {/* 固定在底部的小聊天室 */}
-      {isChatVisible && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            right: 20,
-            width: "50vh",
-            background: "#fff",
-            border: "1px solid #ddd",
-            boxShadow: "0px 0px 10px rgba(0,0,0,0.1)",
-            borderRadius: "10px 10px 0 0",
-            zIndex: 1000,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              padding: "10px",
-              background: "#fafafa",
-              borderBottom: "1px solid #ddd",
-            }}
-          >
-            <span style={{ fontWeight: "bold" }}>聊天室</span>
-            <Button
-              type="link"
-              style={{ float: "right" }}
-              onClick={() => setIsChatVisible(false)}
-            >
-              關閉
-            </Button>
-          </div>
-          <div style={{ height: "100%", overflowY: "auto" }}>
-            <ChatRoom token={token} currentUserId={currentUserId} />
-          </div>
-        </div>
-      )}
+          </Row>
+        </Col>
+      </Row>
 
       {/* 登入表單的 Modal 彈窗 */}
       <Modal
@@ -237,7 +258,6 @@ const HeaderComponent = ({
           >
             <Input />
           </Form.Item>
-
           <Form.Item
             label="密碼"
             name="password"
@@ -245,7 +265,6 @@ const HeaderComponent = ({
           >
             <Input.Password />
           </Form.Item>
-
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
               登入
@@ -253,7 +272,7 @@ const HeaderComponent = ({
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </Header>
   );
 };
 

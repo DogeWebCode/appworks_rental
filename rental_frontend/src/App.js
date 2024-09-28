@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Route, Routes } from "react-router-dom";
 import PropertyDetail from "./components/PropertyDetail";
 import HeaderComponent from "./components/layout/HeaderComponent";
 import FavoriteList from "./components/FavoriteList";
 import FooterComponent from "./components/layout/FooterComponent";
-import { jwtDecode } from "jwt-decode"; // 用於解析 JWT Token
+import { jwtDecode } from "jwt-decode";
 import HomePage from "./components/HomePage";
 import { message } from "antd";
 import ChatRoom from "./components/ChatRoom";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 
 function App() {
   const [token, setToken] = useState(null);
@@ -15,6 +17,12 @@ function App() {
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [chatTargetUser, setChatTargetUser] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const totalUnreadCount = Object.values(unreadCounts).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  const stompClient = useRef(null);
 
   // 檢查 Token 是否有效
   useEffect(() => {
@@ -38,6 +46,92 @@ function App() {
     }
   }, []);
 
+  const chatTargetUserRef = useRef(chatTargetUser);
+
+  useEffect(() => {
+    chatTargetUserRef.current = chatTargetUser;
+  }, [chatTargetUser]);
+
+  useEffect(() => {
+    if (token && currentUserId) {
+      stompClient.current = new Client({
+        webSocketFactory: () =>
+          new SockJS(`http://localhost:8080/ws?token=${token}`),
+        // const socket = new SockJS(`https://goodshiba.com/ws?token=${token}`);
+
+        // 每 20 秒檢查一次有沒有來自 Server 的心跳
+        heartbeatIncoming: 20000,
+        // 每 20 秒發送一次心跳到 Server，證明自己還活著
+        heartbeatOutgoing: 20000,
+        // 斷線的時候，每 5 秒嘗試連線一次
+        reconnectDelay: 5000,
+
+        onConnect: (frame) => {
+          console.log("connect: " + frame);
+
+          // 訂閱新訊息
+          stompClient.current.subscribe("/user/queue/message", (message) => {
+            const newMessage = JSON.parse(message.body);
+            const senderId = newMessage.senderId;
+
+            if (senderId !== chatTargetUserRef.current) {
+              setUnreadCounts((prevCounts) => ({
+                ...prevCounts,
+                [senderId]: (prevCounts[senderId] || 0) + 1,
+              }));
+            }
+          });
+        },
+
+        onStompError: (frame) => {
+          console.error("Broker reported error: " + frame.headers["message"]);
+          console.error("Additional details: " + frame.body);
+        },
+
+        onWebSocketClose: (evt) => {
+          console.log("WebSocket closed", evt);
+        },
+
+        onWebSocketError: (evt) => {
+          console.error("WebSocket error", evt);
+        },
+      });
+      stompClient.current.activate();
+    }
+
+    if (token) {
+      fetch(`/api/chat/messages/unread/count`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return response.json().then((errorData) => {
+              throw new Error(
+                errorData.message || "Failed to fetch unread counts"
+              );
+            });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          setUnreadCounts(data);
+        })
+        .catch((error) =>
+          console.error("Error fetching unread counts:", error)
+        );
+    }
+
+    return () => {
+      if (stompClient.current) {
+        stompClient.current.deactivate();
+        console.log("WebSocket connection closed");
+      }
+    };
+  }, [token, currentUserId]);
+
   // 處理登入
   const handleLogin = (newToken) => {
     localStorage.setItem("jwtToken", newToken);
@@ -52,14 +146,19 @@ function App() {
   const handleLogout = () => {
     setToken(null);
     setCurrentUserId(null);
+    setUnreadCounts({});
     localStorage.removeItem("jwtToken"); // 清除 Token
     message.success("登出成功！");
   };
 
   // 顯示聊天室並設置聊天對象
   const showChat = (targetUserId) => {
-    setChatTargetUser(targetUserId);
-    setIsChatVisible(true);
+    if (targetUserId) {
+      setChatTargetUser(targetUserId);
+      setIsChatVisible(true);
+    } else {
+      console.log("Please select a user first");
+    }
   };
 
   // 隱藏聊天室
@@ -82,6 +181,7 @@ function App() {
         chatTargetUser={chatTargetUser}
         setChatTargetUser={setChatTargetUser}
         hideChat={hideChat}
+        totalUnreadCount={totalUnreadCount}
       />
       <Routes>
         <Route
@@ -160,6 +260,10 @@ function App() {
               token={token}
               currentUserId={currentUserId}
               targetUserId={chatTargetUser}
+              setChatTargetUser={setChatTargetUser}
+              unreadCounts={unreadCounts}
+              setUnreadCounts={setUnreadCounts}
+              stompClient={stompClient.current}
             />
           </div>
         </div>
