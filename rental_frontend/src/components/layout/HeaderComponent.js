@@ -13,6 +13,7 @@ import {
   Menu,
   Row,
   Col,
+  Space,
 } from "antd";
 import {
   LogoutOutlined,
@@ -21,8 +22,9 @@ import {
   HeartOutlined,
   UserOutlined,
   MenuOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -112,6 +114,9 @@ const HeaderComponent = ({
         聊天室
         <Badge count={totalUnreadCount} offset={[5, -5]} size="small" />
       </Menu.Item>
+      <Menu.Item key="upload" icon={<UploadOutlined />}>
+        <Link to="/upload-property">上傳房源</Link>
+      </Menu.Item>
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
         登出
       </Menu.Item>
@@ -121,129 +126,107 @@ const HeaderComponent = ({
   return (
     <Header
       style={{
-        background: "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)", // 背景漸變
+        background: "linear-gradient(135deg, #f0f0f0 0%, #ffffff 100%)",
         padding: "0 16px",
         boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
-        borderRadius: "8px 0",
         position: "sticky",
         top: 0,
         zIndex: 1000,
+        height: "auto",
+        minHeight: "64px",
       }}
     >
-      <Row align="middle" justify="space-between">
-        <Col>
-          <Row align="middle" gutter={8}>
-            <Col>
-              <Avatar
-                src="/shiba-logo.png"
-                size="large"
-                style={{
-                  marginRight: 8,
-                  cursor: "pointer",
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-                }}
-                onClick={handleLogoClick}
-              />
-            </Col>
-            <Col>
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  cursor: "pointer",
-                  color: "#333",
-
-                  fontFamily: "system-ui",
-                }}
-                onClick={handleLogoClick}
-              >
-                柴好租
-              </Title>
-            </Col>
-          </Row>
+      <Row
+        align="middle"
+        justify="space-between"
+        style={{ flexWrap: "nowrap" }}
+      >
+        <Col flex="none">
+          <Space align="center">
+            <Avatar
+              src="/shiba-logo.png"
+              size="large"
+              style={{
+                cursor: "pointer",
+                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+              }}
+              onClick={handleLogoClick}
+            />
+            <Title
+              level={3}
+              style={{
+                margin: 0,
+                cursor: "pointer",
+                color: "#333",
+                fontFamily: "system-ui",
+                whiteSpace: "nowrap",
+              }}
+              onClick={handleLogoClick}
+            >
+              柴好租
+            </Title>
+          </Space>
         </Col>
-        {token && (
-          <Col flex="auto" style={{ textAlign: "end", marginRight: 12 }}>
-            <span style={{ fontFamily: "system-ui", fontSize: "16px" }}>
-              歡迎回來，{currentUserId}
-            </span>
+
+        {token ? (
+          <Col>
+            <Row align="middle" gutter={[8, 8]} wrap={false}>
+              <Col>
+                <span
+                  style={{
+                    fontFamily: "system-ui",
+                    fontSize: "16px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  歡迎回來，{currentUserId}
+                </span>
+              </Col>
+              <Col xs={0} md={0} lg={24}>
+                <Space wrap>
+                  <Link to="/upload-property">
+                    <Button icon={<UploadOutlined />}>上傳房源</Button>
+                  </Link>
+                  <Button icon={<UserOutlined />}>個人資料</Button>
+                  <Button
+                    icon={<HeartOutlined />}
+                    onClick={handleFavoriteClick}
+                  >
+                    收藏夾
+                  </Button>
+                  <Button icon={<MessageOutlined />} onClick={handleChatClick}>
+                    聊天室
+                    <Badge
+                      count={totalUnreadCount}
+                      offset={[5, -5]}
+                      size="small"
+                    />
+                  </Button>
+                  <Button icon={<LogoutOutlined />} onClick={onLogout}>
+                    登出
+                  </Button>
+                </Space>
+              </Col>
+              <Col xs={24} md={24} lg={0}>
+                <Dropdown overlay={menu} placement="bottomRight">
+                  <Button icon={<MenuOutlined />} />
+                </Dropdown>
+              </Col>
+            </Row>
+          </Col>
+        ) : (
+          <Col>
+            <Button
+              type="primary"
+              onClick={handleLoginClick}
+              icon={<LoginOutlined />}
+            >
+              登入
+            </Button>
           </Col>
         )}
-        <Col>
-          <Row align="middle" gutter={16}>
-            {token ? (
-              <>
-                <Col xs={0} md={24}>
-                  <Row gutter={16}>
-                    <Col>
-                      <Button
-                        type="link"
-                        style={{ fontFamily: "system-ui" }}
-                        icon={<UserOutlined />}
-                      >
-                        個人資料
-                      </Button>
-                    </Col>
-                    <Col>
-                      <Button
-                        type="link"
-                        style={{ fontFamily: "system-ui" }}
-                        onClick={handleFavoriteClick}
-                        icon={<HeartOutlined />}
-                      >
-                        收藏夾
-                      </Button>
-                    </Col>
-                    <Col>
-                      <Button
-                        type="link"
-                        style={{ fontFamily: "system-ui", marginRight: 10 }}
-                        onClick={handleChatClick}
-                      >
-                        <Badge
-                          count={totalUnreadCount}
-                          offset={[5, -5]}
-                          size="small"
-                        >
-                          <MessageOutlined style={{ color: "#1677FF" }} />
-                        </Badge>
-                        聊天室
-                      </Button>
-                    </Col>
-                    <Col>
-                      <Button
-                        type="primary"
-                        icon={<LogoutOutlined />}
-                        danger
-                        onClick={onLogout}
-                      >
-                        登出
-                      </Button>
-                    </Col>
-                  </Row>
-                </Col>
-                <Col xs={24} md={0}>
-                  <Dropdown overlay={menu} placement="bottomRight">
-                    <Button icon={<MenuOutlined />} />
-                  </Dropdown>
-                </Col>
-              </>
-            ) : (
-              <Col>
-                <Button
-                  type="primary"
-                  onClick={handleLoginClick}
-                  icon={<LoginOutlined />}
-                >
-                  登入
-                </Button>
-              </Col>
-            )}
-          </Row>
-        </Col>
       </Row>
 
-      {/* 登入表單的 Modal 彈窗 */}
       <Modal
         title="登入"
         open={isLoginModalVisible}

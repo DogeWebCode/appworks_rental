@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { computeDistanceBetween, LatLng } from "spherical-geometry-js";
 import {
   Layout,
   Typography,
@@ -12,6 +13,7 @@ import {
   Avatar,
   Space,
   Tag,
+  Tooltip,
 } from "antd";
 import {
   EnvironmentOutlined,
@@ -27,18 +29,61 @@ import {
   LeftOutlined,
   HeartOutlined,
   HeartFilled,
+  ShopOutlined,
+  CoffeeOutlined,
+  ReadOutlined,
+  ClockCircleOutlined,
+  StarOutlined,
+  UpOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import Lightbox from "yet-another-react-lightbox";
 import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import { GoogleMap, useJsApiLoader, MarkerF } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
-const libraries = ["places"];
-const GOOGLE_MAPS_API_KEY = "AIzaSyANaVByjlclPg6DmowQQOP9k9fSo76tMIQ";
+const libraries = ["places", "geometry", "marker"];
+const allowedTypes = ["restaurant", "store", "convenience_store", "school"]; // 篩選設施類型
+const maxMarkersPerType = 8; // 限制每種類型最多顯示 5 個設施
+
+const typeNames = {
+  restaurant: "餐廳",
+  food: "餐廳",
+  store: "商店",
+  convenience_store: "便利商店",
+  supermarket: "超市",
+  school: "學校",
+};
+
+const typeIcons = {
+  restaurant: <CoffeeOutlined />,
+  convenience_store: <ShopOutlined />,
+  store: <ShopOutlined />,
+  school: <ReadOutlined />,
+};
+
+const typeColors = {
+  restaurant: "#52c41a",
+  convenience_store: "#1890ff",
+  store: "#1890ff",
+  school: "#faad14",
+};
+
+const foodRelatedTypes = [
+  "restaurant",
+  "food",
+  "cafe",
+  "bakery",
+  "meal_takeaway",
+  "meal_delivery",
+];
+
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_ID = process.env.REACT_APP_GOOGLE_MAPS_ID;
 
 const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
   const { propertyId } = useParams();
@@ -50,14 +95,18 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [places, setPlaces] = useState([]);
+  const [showAllHours, setShowAllHours] = useState(false);
   const navigate = useNavigate();
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries,
+    language: "zh-TW",
+    mapIds: [GOOGLE_MAPS_ID],
   });
 
   const [map, setMap] = useState(null);
+  const [, setAdvancedMarker] = useState(null);
 
   const onMapLoad = useCallback((map) => {
     setMap(map);
@@ -90,31 +139,352 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
     fetchPropertyDetail();
   }, [propertyId]);
 
+  // 檢查 property 是否讀取完畢，要不然偶爾點進來會報錯
+  const propertyLocation = useMemo(() => {
+    if (!isLoaded || !window.google || !window.google.maps || !property)
+      return null;
+
+    return new window.google.maps.LatLng(property.latitude, property.longitude);
+  }, [isLoaded, property]);
+
   useEffect(() => {
-    if (isLoaded && map && property) {
-      const fetchNearbyPlaces = () => {
-        const service = new window.google.maps.places.PlacesService(map);
-        const location = new window.google.maps.LatLng(
-          property.latitude,
-          property.longitude
-        );
+    if (isLoaded && map && property && propertyLocation) {
+      const service = new window.google.maps.places.PlacesService(map);
 
-        const request = {
-          location: location,
-          radius: 500,
-          type: ["store", "restaurant", "school"],
-        };
-
-        service.nearbySearch(request, (results, status) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            setPlaces(results);
-          }
-        });
+      const request = {
+        location: propertyLocation,
+        radius: 300,
+        type: ["store", "restaurant", "school"],
       };
 
-      fetchNearbyPlaces();
+      service.nearbySearch(request, (results, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+          const placeDetailsPromises = results.map((place) => {
+            return new Promise((resolve) => {
+              service.getDetails(
+                {
+                  placeId: place.place_id,
+                  fields: [
+                    "name",
+                    "opening_hours",
+                    "rating",
+                    "user_ratings_total",
+                    "vicinity",
+                    "geometry",
+                    "types",
+                  ],
+                },
+                (details, status) => {
+                  if (
+                    status === window.google.maps.places.PlacesServiceStatus.OK
+                  ) {
+                    resolve({ ...place, ...details });
+                  } else {
+                    resolve(place);
+                  }
+                }
+              );
+            });
+          });
+
+          Promise.all(placeDetailsPromises).then((detailedPlaces) => {
+            setPlaces(detailedPlaces);
+          });
+        }
+      });
+
+      // 創建 AdvancedMarkerElement
+      const createAdvancedMarker = async () => {
+        // 確保 Google Maps 庫已加載，並使用 importLibrary 加載 marker
+        if (!window.google || !window.google.maps) {
+          console.error("Google Maps Library 未加載");
+          return null;
+        }
+
+        const { AdvancedMarkerElement } =
+          await window.google.maps.importLibrary("marker");
+
+        if (!AdvancedMarkerElement) {
+          console.error("AdvancedMarkerElement 未加載");
+          return null;
+        }
+
+        // 創建 AdvancedMarkerElement
+        const advancedMarker = new AdvancedMarkerElement({
+          map: map,
+          position: { lat: property.latitude, lng: property.longitude },
+          title: property.title,
+        });
+
+        return advancedMarker;
+      };
+
+      const advancedMarker = createAdvancedMarker();
+
+      return () => {
+        if (advancedMarker) {
+          // For AdvancedMarkerElement, we need to check if it has a map property
+          if (advancedMarker.map) {
+            advancedMarker.map = null;
+          }
+          setAdvancedMarker(null);
+        }
+      };
     }
-  }, [isLoaded, map, property]);
+  }, [isLoaded, map, property, propertyLocation]);
+
+  const groupByType = (places) => {
+    const grouped = {};
+
+    places.forEach((place) => {
+      let assignedType = null;
+
+      // 優先檢查是否為便利商店
+      if (place.types.includes("convenience_store")) {
+        assignedType = "convenience_store";
+      }
+      // 檢查是否為食品相關類型，但排除便利商店
+      else if (
+        place.types.some((type) => foodRelatedTypes.includes(type)) &&
+        !place.types.includes("convenience_store")
+      ) {
+        assignedType = "restaurant";
+      } else if (place.types.includes("school")) {
+        assignedType = "school";
+      } else if (place.types.includes("store")) {
+        assignedType = "store";
+      }
+
+      if (assignedType && allowedTypes.includes(assignedType)) {
+        if (!grouped[assignedType]) {
+          grouped[assignedType] = [];
+        }
+        const distance = computeDistanceBetween(
+          propertyLocation,
+          new LatLng(
+            place.geometry.location.lat(),
+            place.geometry.location.lng()
+          )
+        );
+        if (distance <= 400) {
+          grouped[assignedType].push({ ...place, distance });
+        }
+      }
+    });
+
+    // 每個類型只保留最近的設施
+    Object.keys(grouped).forEach((type) => {
+      grouped[type] = grouped[type]
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, maxMarkersPerType);
+    });
+
+    return grouped;
+  };
+
+  const PlaceTooltip = ({ place }) => {
+    const renderOpeningHours = () => {
+      if (!place.opening_hours || !place.opening_hours.weekday_text) {
+        return null;
+      }
+
+      const daysOfWeek = [
+        "星期日",
+        "星期一",
+        "星期二",
+        "星期三",
+        "星期四",
+        "星期五",
+        "星期六",
+      ];
+      const today = new Date().getDay();
+      const todayText = place.opening_hours.weekday_text[today];
+      const isOpen = place.opening_hours.isOpen();
+
+      return (
+        <>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text strong style={{ fontSize: "14px" }}>
+              <ClockCircleOutlined style={{ marginRight: 8 }} />
+              {isOpen ? "營業中" : "休息中"}
+            </Text>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              {todayText.split(": ")[1]}
+            </Text>
+          </div>
+          {showAllHours && (
+            <div style={{ marginTop: 8 }}>
+              {place.opening_hours.weekday_text.map((day, index) => (
+                <div
+                  key={index}
+                  style={{ display: "flex", justifyContent: "space-between" }}
+                >
+                  <Text style={{ fontSize: "12px" }}>{daysOfWeek[index]}</Text>
+                  <Text style={{ fontSize: "12px" }}>{day.split(": ")[1]}</Text>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button
+            type="link"
+            size="small"
+            onClick={() => setShowAllHours(!showAllHours)}
+            style={{ padding: 0, fontSize: "12px", marginTop: 4 }}
+          >
+            {showAllHours ? <UpOutlined /> : <DownOutlined />}
+            {showAllHours ? "收起" : "查看完整營業時間"}
+          </Button>
+        </>
+      );
+    };
+
+    return (
+      <div
+        style={{
+          padding: "16px",
+          background: "white",
+          borderRadius: "8px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          width: 280,
+        }}
+      >
+        <Title level={5} style={{ marginBottom: 8 }}>
+          {place.name}
+        </Title>
+        <div style={{ marginBottom: 12 }}>
+          <StarOutlined style={{ color: "#fadb14", marginRight: 4 }} />
+          <Text strong>{place.rating}</Text>
+          <Text type="secondary" style={{ fontSize: "12px", marginLeft: 4 }}>
+            ({place.user_ratings_total} 則評價)
+          </Text>
+        </div>
+        <Divider style={{ margin: "12px 0" }} />
+        <Space direction="vertical" size={8} style={{ width: "100%" }}>
+          <Text style={{ fontSize: "14px" }}>
+            <EnvironmentOutlined style={{ marginRight: 8 }} />
+            {place.vicinity}
+          </Text>
+          <Text style={{ fontSize: "14px" }}>
+            <EnvironmentOutlined style={{ marginRight: 8 }} />
+            距離：{Math.round(place.distance)}米
+          </Text>
+          {renderOpeningHours()}
+        </Space>
+      </div>
+    );
+  };
+
+  const [expandedTypes, setExpandedTypes] = useState({});
+
+  const renderGroupedPlaces = () => {
+    const groupedPlaces = groupByType(places);
+
+    // 優化分類邏輯，確保每個地點只出現在一個類別中
+    const optimizedPlaces = {};
+    Object.entries(groupedPlaces).forEach(([type, placeList]) => {
+      optimizedPlaces[type] = placeList.filter(
+        (place) =>
+          !Object.entries(optimizedPlaces).some(
+            ([otherType, otherList]) =>
+              otherType !== type &&
+              otherList.some((otherPlace) => otherPlace.name === place.name)
+          )
+      );
+    });
+
+    const toggleExpand = (type) => {
+      setExpandedTypes((prev) => ({ ...prev, [type]: !prev[type] }));
+    };
+
+    return (
+      <Card
+        title={<Title level={4}>周邊設施</Title>}
+        className="nearby-facilities"
+        style={{ marginTop: 20 }}
+      >
+        {Object.entries(optimizedPlaces).map(([type, placeList]) => {
+          const sortedPlaces = placeList.sort(
+            (a, b) => a.distance - b.distance
+          );
+          const displayPlaces = expandedTypes[type]
+            ? sortedPlaces
+            : sortedPlaces.slice(0, maxMarkersPerType);
+
+          return (
+            <div key={type} style={{ marginBottom: 20 }}>
+              <Title
+                level={5}
+                style={{
+                  color: typeColors[type],
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {typeIcons[type]}{" "}
+                <span style={{ marginLeft: 8 }}>{typeNames[type]}</span>
+              </Title>
+              <Row gutter={[8, 8]}>
+                {displayPlaces.map((place, index) => (
+                  <Col key={index} xs={12} sm={8} md={6}>
+                    <Tooltip
+                      title={<PlaceTooltip place={place} />}
+                      placement="bottom"
+                      overlayStyle={{ maxWidth: "none" }}
+                      color="white"
+                    >
+                      <Card
+                        size="small"
+                        style={{
+                          borderRadius: 16,
+                          borderColor: typeColors[type],
+                          cursor: "pointer",
+                        }}
+                        body={{ padding: "8px 12px" }}
+                        hoverable
+                      >
+                        <Text
+                          style={{
+                            color: typeColors[type],
+                            fontSize: 14,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "block",
+                          }}
+                        >
+                          {place.name}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          <EnvironmentOutlined /> {Math.round(place.distance)}m
+                        </Text>
+                      </Card>
+                    </Tooltip>
+                  </Col>
+                ))}
+              </Row>
+              {placeList.length > maxMarkersPerType && (
+                <Button
+                  type="link"
+                  onClick={() => toggleExpand(type)}
+                  style={{ padding: 0, marginTop: 8 }}
+                >
+                  {expandedTypes[type]
+                    ? "收起"
+                    : `查看更多 (共${placeList.length}個)`}
+                </Button>
+              )}
+            </div>
+          );
+        })}
+      </Card>
+    );
+  };
 
   useEffect(() => {
     const recordViewAction = async () => {
@@ -525,39 +895,13 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
               <GoogleMap
                 mapContainerStyle={{ width: "100%", height: "400px" }}
                 center={{ lat: property.latitude, lng: property.longitude }}
-                zoom={15}
+                zoom={18}
                 onLoad={onMapLoad}
-              >
-                <MarkerF
-                  position={{
-                    lat: property.latitude,
-                    lng: property.longitude,
-                  }}
-                />
-                {places.map((place, index) => (
-                  <MarkerF
-                    key={index}
-                    position={{
-                      lat: place.geometry.location.lat(),
-                      lng: place.geometry.location.lng(),
-                    }}
-                    icon={{
-                      url: place.icon,
-                      scaledSize: new window.google.maps.Size(20, 20),
-                    }}
-                  />
-                ))}
-              </GoogleMap>
-              <div style={{ marginTop: "20px" }}>
-                <Title level={4}>周邊設施</Title>
-                <Space wrap>
-                  {places.map((place, index) => (
-                    <Tag key={index} color="blue">
-                      {place.name}
-                    </Tag>
-                  ))}
-                </Space>
-              </div>
+                options={{
+                  mapId: GOOGLE_MAPS_ID,
+                }}
+              ></GoogleMap>
+              <div style={{ marginTop: "20px" }}>{renderGroupedPlaces()}</div>
             </Card>
           </Col>
           <Col xs={24} lg={8}>

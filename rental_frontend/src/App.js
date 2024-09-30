@@ -10,6 +10,7 @@ import { message } from "antd";
 import ChatRoom from "./components/ChatRoom";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import PropertyUploadForm from "./components/PropertyUploadForm";
 
 function App() {
   const [token, setToken] = useState(null);
@@ -23,6 +24,10 @@ function App() {
     0
   );
   const stompClient = useRef(null);
+  const wsEndpoint =
+    process.env.NODE_ENV === "development"
+      ? process.env.REACT_APP_WS_ENDPOINT_DEV
+      : process.env.REACT_APP_WS_ENDPOINT_PROD;
 
   // 檢查 Token 是否有效
   useEffect(() => {
@@ -55,9 +60,7 @@ function App() {
   useEffect(() => {
     if (token && currentUserId) {
       stompClient.current = new Client({
-        webSocketFactory: () =>
-          new SockJS(`http://localhost:8080/ws?token=${token}`),
-        // const socket = new SockJS(`https://goodshiba.com/ws?token=${token}`);
+        webSocketFactory: () => new SockJS(`${wsEndpoint}?token=${token}`),
 
         // 每 20 秒檢查一次有沒有來自 Server 的心跳
         heartbeatIncoming: 20000,
@@ -130,7 +133,7 @@ function App() {
         console.log("WebSocket connection closed");
       }
     };
-  }, [token, currentUserId]);
+  }, [token, currentUserId, wsEndpoint]);
 
   // 處理登入
   const handleLogin = (newToken) => {
@@ -211,6 +214,17 @@ function App() {
           path="/favorites"
           element={
             <FavoriteList
+              token={token}
+              currentUserId={currentUserId}
+              isLoginModalVisible={isLoginModalVisible}
+              setIsLoginModalVisible={setIsLoginModalVisible}
+            />
+          }
+        />
+        <Route
+          path="/upload-property"
+          element={
+            <PropertyUploadForm
               token={token}
               currentUserId={currentUserId}
               isLoginModalVisible={isLoginModalVisible}
