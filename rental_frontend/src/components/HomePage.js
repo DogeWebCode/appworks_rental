@@ -15,6 +15,7 @@ import {
 } from "antd";
 import { ReloadOutlined, SmileOutlined, HomeOutlined } from "@ant-design/icons";
 import MainLayout from "./layout/MainLayout";
+import SortController from "./SortController";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 const { Option } = Select;
@@ -37,16 +38,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     isRecommendationFromParams
   );
 
-  const handleSort = (newSortBy) => {
-    let newSortDirection = sortDirection;
-    if (newSortBy === sortBy) {
-      // 如果點擊同一個排序選項，切換排序方向
-      newSortDirection = sortDirection === "asc" ? "desc" : "asc";
-    } else {
-      // 如果是新的排序選項，默認為升序
-      newSortDirection = "asc";
-    }
-
+  const handleSort = (newSortBy, newSortDirection) => {
     setSortBy(newSortBy);
     setSortDirection(newSortDirection);
     searchParams.set("sortBy", newSortBy);
@@ -445,6 +437,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={8}>
                   <Select
+                    showSearch
                     placeholder="選擇縣市"
                     style={{ width: "100%" }}
                     onChange={handleCityChange}
@@ -459,6 +452,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
                 </Col>
                 <Col xs={24} md={8}>
                   <Select
+                    showSearch
                     placeholder="選擇區域"
                     style={{ width: "100%" }}
                     onChange={handleDistrictChange}
@@ -474,6 +468,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
                 </Col>
                 <Col xs={24} md={8}>
                   <Select
+                    showSearch
                     placeholder="選擇道路"
                     style={{ width: "100%" }}
                     onChange={handleRoadChange}
@@ -589,6 +584,11 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
           margin: "0 auto",
         }}
       >
+        <SortController
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          handleSort={handleSort}
+        />
         {properties.length === 0 ? (
           <div style={{ textAlign: "center", marginTop: 50 }}>
             <Empty
@@ -618,22 +618,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
               style={{
                 padding: 8,
               }}
-            >
-              <Col>
-                <Button onClick={() => handleSort("price")}>
-                  租金排序{" "}
-                  {sortBy === "price" &&
-                    (sortDirection === "asc" ? "低" : "高")}
-                </Button>
-              </Col>
-              <Col>
-                <Button onClick={() => handleSort("createdAt")}>
-                  上架時間{" "}
-                  {sortBy === "createdAt" &&
-                    (sortDirection === "asc" ? "早" : "晚")}
-                </Button>
-              </Col>
-            </Row>
+            ></Row>
 
             <Row gutter={[16, 16]}>
               {properties.map((property) => (

@@ -96,30 +96,26 @@ const HeaderComponent = ({
 
   const menu = (
     <Menu>
+      {/* {token && (
+        <Menu.Item
+          key="username"
+          disabled
+          style={{ cursor: "default", textAlign: "center" }}
+        >
+          {currentUserId}
+        </Menu.Item>
+      )} */}
       <Menu.Item key="profile" icon={<UserOutlined />}>
         個人資料
-      </Menu.Item>
-      <Menu.Item
-        key="favorites"
-        icon={<HeartOutlined />}
-        onClick={handleFavoriteClick}
-      >
-        收藏夾
-      </Menu.Item>
-      <Menu.Item
-        key="chat"
-        icon={<MessageOutlined />}
-        onClick={handleChatClick}
-      >
-        聊天室
-        <Badge count={totalUnreadCount} offset={[5, -5]} size="small" />
       </Menu.Item>
       <Menu.Item key="upload" icon={<UploadOutlined />}>
         <Link to="/upload-property">上傳房源</Link>
       </Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
-        登出
-      </Menu.Item>
+      {token && (
+        <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
+          登出
+        </Menu.Item>
+      )}
     </Menu>
   );
 
@@ -168,63 +164,38 @@ const HeaderComponent = ({
           </Space>
         </Col>
 
-        {token ? (
-          <Col>
-            <Row align="middle" gutter={[8, 8]} wrap={false}>
-              <Col>
-                <span
-                  style={{
-                    fontFamily: "system-ui",
-                    fontSize: "16px",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  歡迎回來，{currentUserId}
-                </span>
-              </Col>
-              <Col xs={0} md={0} lg={24}>
-                <Space wrap>
-                  <Link to="/upload-property">
-                    <Button icon={<UploadOutlined />}>上傳房源</Button>
-                  </Link>
-                  <Button icon={<UserOutlined />}>個人資料</Button>
-                  <Button
-                    icon={<HeartOutlined />}
-                    onClick={handleFavoriteClick}
-                  >
-                    收藏夾
-                  </Button>
-                  <Button icon={<MessageOutlined />} onClick={handleChatClick}>
-                    聊天室
-                    <Badge
-                      count={totalUnreadCount}
-                      offset={[5, -5]}
-                      size="small"
-                    />
-                  </Button>
-                  <Button icon={<LogoutOutlined />} onClick={onLogout}>
-                    登出
-                  </Button>
-                </Space>
-              </Col>
-              <Col xs={24} md={24} lg={0}>
+        <Col>
+          <Space wrap>
+            {token ? (
+              <>
+                <span style={{ marginRight: 2 }}>您好，{currentUserId}</span>
+                <Button icon={<HeartOutlined />} onClick={handleFavoriteClick}>
+                  收藏夾
+                </Button>
+                <Button icon={<MessageOutlined />} onClick={handleChatClick}>
+                  聊天室
+                  <Badge
+                    count={totalUnreadCount}
+                    offset={[5, -5]}
+                    size="small"
+                  />
+                </Button>
+
                 <Dropdown overlay={menu} placement="bottomRight">
-                  <Button icon={<MenuOutlined />} />
+                  <Button icon={<MenuOutlined />}>選單</Button>
                 </Dropdown>
-              </Col>
-            </Row>
-          </Col>
-        ) : (
-          <Col>
-            <Button
-              type="primary"
-              onClick={handleLoginClick}
-              icon={<LoginOutlined />}
-            >
-              登入
-            </Button>
-          </Col>
-        )}
+              </>
+            ) : (
+              <Button
+                type="primary"
+                onClick={handleLoginClick}
+                icon={<LoginOutlined />}
+              >
+                登入
+              </Button>
+            )}
+          </Space>
+        </Col>
       </Row>
 
       <Modal

@@ -67,10 +67,26 @@ const typeIcons = {
 };
 
 const typeColors = {
-  restaurant: "#52c41a",
-  convenience_store: "#1890ff",
-  store: "#1890ff",
-  school: "#faad14",
+  restaurant: {
+    main: "#faad14",
+    light: "#fffbe6",
+    border: "#ffe58f",
+  },
+  convenience_store: {
+    main: "#1890ff",
+    light: "#e6f7ff",
+    border: "#91d5ff",
+  },
+  store: {
+    main: "#1890ff",
+    light: "#e6f7ff",
+    border: "#91d5ff",
+  },
+  school: {
+    main: "#faad14",
+    light: "#fffbe6",
+    border: "#ffe58f",
+  },
 };
 
 const foodRelatedTypes = [
@@ -172,6 +188,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
                     "vicinity",
                     "geometry",
                     "types",
+                    "utc_offset_minutes",
                   ],
                 },
                 (details, status) => {
@@ -289,17 +306,18 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
       }
 
       const daysOfWeek = [
-        "星期日",
         "星期一",
         "星期二",
         "星期三",
         "星期四",
         "星期五",
         "星期六",
+        "星期日",
       ];
-      const today = new Date().getDay();
+      const today = (new Date().getDay() + 6) % 7;
       const todayText = place.opening_hours.weekday_text[today];
       const isOpen = place.opening_hours.isOpen();
+      console.log(today);
 
       return (
         <>
@@ -406,7 +424,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
       <Card
         title={<Title level={4}>周邊設施</Title>}
         className="nearby-facilities"
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 20, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
       >
         {Object.entries(optimizedPlaces).map(([type, placeList]) => {
           const sortedPlaces = placeList.sort(
@@ -417,11 +435,11 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
             : sortedPlaces.slice(0, maxMarkersPerType);
 
           return (
-            <div key={type} style={{ marginBottom: 20 }}>
+            <div key={type} style={{ marginBottom: 16 }}>
               <Title
                 level={5}
                 style={{
-                  color: typeColors[type],
+                  color: typeColors[type].main,
                   display: "flex",
                   alignItems: "center",
                 }}
@@ -441,26 +459,30 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
                       <Card
                         size="small"
                         style={{
-                          borderRadius: 16,
-                          borderColor: typeColors[type],
+                          borderRadius: 20,
+                          border: `1px solid ${typeColors[type].border}`,
+                          backgroundColor: typeColors[type].light,
                           cursor: "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         body={{ padding: "8px 12px" }}
                         hoverable
                       >
                         <Text
+                          strong
                           style={{
-                            color: typeColors[type],
-                            fontSize: 14,
+                            color: typeColors[type].main,
+                            fontSize: 16,
+                            display: "block",
+                            marginBottom: 4,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
-                            display: "block",
                           }}
                         >
                           {place.name}
                         </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
+                        <Text type="secondary" style={{ fontSize: 14 }}>
                           <EnvironmentOutlined /> {Math.round(place.distance)}m
                         </Text>
                       </Card>

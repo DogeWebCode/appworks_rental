@@ -12,7 +12,6 @@ import {
   Col,
   Typography,
   Card,
-  Divider,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -357,7 +356,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               rules={[{ required: true, message: "請選擇房屋類型" }]}
             >
               <Select>
-                <Option value="整層住家">整層住家</Option>
+                <Option value="整層">整層</Option>
                 <Option value="獨立套房">獨立套房</Option>
                 <Option value="分租套房">分租套房</Option>
                 <Option value="雅房">雅房</Option>
@@ -372,19 +371,9 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               <Select>
                 <Option value="電梯大樓">電梯大樓</Option>
                 <Option value="公寓">公寓</Option>
-                <Option value="透天厝">透天厝</Option>
+                <Option value="透天">透天</Option>
+                <Option value="別墅">別墅</Option>
                 <Option value="其他">其他</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="lessor"
-              label="出租者"
-              rules={[{ required: true, message: "請選擇出租者身份" }]}
-            >
-              <Select>
-                <Option value="屋主">屋主</Option>
-                <Option value="代理人">代理人</Option>
               </Select>
             </Form.Item>
 
@@ -401,8 +390,8 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               <Col span={8}>
                 <Form.Item
                   name="floor"
-                  label="樓層"
-                  rules={[{ required: true, message: "請輸入樓層" }]}
+                  label="所在樓層"
+                  rules={[{ required: true, message: "請輸入此房源所在樓層" }]}
                 >
                   <InputNumber style={{ width: "100%" }} min={0} />
                 </Form.Item>
@@ -418,17 +407,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               </Col>
             </Row>
 
-            <Form.Item
-              name="status"
-              label="狀態"
-              rules={[{ required: true, message: "請選擇狀態" }]}
-            >
-              <Select>
-                <Option value="空閒">空閒</Option>
-                <Option value="已出租">已出租</Option>
-              </Select>
-            </Form.Item>
-
+            {/* 圖片上傳 */}
             <Form.Item
               name="mainImage"
               label="主圖片"
@@ -442,6 +421,19 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                   setMainImageUrl(null);
                   return true;
                 }}
+              >
+                <div>
+                  <UploadOutlined />
+                  <div style={{ marginTop: 8 }}>上傳</div>
+                </div>
+              </Upload>
+            </Form.Item>
+
+            <Form.Item name="images" label="房源圖片">
+              <Upload
+                beforeUpload={() => false}
+                listType="picture-card"
+                multiple
               >
                 <div>
                   <UploadOutlined />
@@ -468,20 +460,6 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
             <Form.Item name="rentPeriod" label="租期">
               <Input />
             </Form.Item>
-
-            {/* 地理位置 */}
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item name="latitude" label="緯度">
-                  <InputNumber style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="longitude" label="經度">
-                  <InputNumber style={{ width: "100%" }} />
-                </Form.Item>
-              </Col>
-            </Row>
 
             {/* 特色 */}
             <Form.Item name="features" label="特色">
@@ -514,15 +492,15 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
             </Form.Item>
 
             {/* 房屋格局 */}
-            <Divider orientation="left">房屋格局</Divider>
+
             <Row gutter={16}>
               <Col span={8}>
-                <Form.Item name="roomCount" label="房數">
+                <Form.Item name="roomCount" label="房間數">
                   <InputNumber style={{ width: "100%" }} min={0} />
                 </Form.Item>
               </Col>
               <Col span={8}>
-                <Form.Item name="livingRoomCount" label="廳數">
+                <Form.Item name="livingRoomCount" label="客廳數">
                   <InputNumber style={{ width: "100%" }} min={0} />
                 </Form.Item>
               </Col>
@@ -544,21 +522,6 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                 </Form.Item>
               </Col>
             </Row>
-
-            {/* 圖片上傳 */}
-            <Divider orientation="left">其他圖片</Divider>
-            <Form.Item name="images" label="房源圖片">
-              <Upload
-                beforeUpload={() => false}
-                listType="picture-card"
-                multiple
-              >
-                <div>
-                  <UploadOutlined />
-                  <div style={{ marginTop: 8 }}>上傳</div>
-                </div>
-              </Upload>
-            </Form.Item>
 
             <Form.Item>
               <Button type="primary" htmlType="submit" size="large" block>
