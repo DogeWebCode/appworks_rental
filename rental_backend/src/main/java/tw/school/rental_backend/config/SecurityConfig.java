@@ -30,6 +30,7 @@ public class SecurityConfig {
 
     public SecurityConfig(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
+
     }
 
     @Bean
@@ -55,9 +56,12 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login","/api/health/**").permitAll()
+                        .requestMatchers("/ws/**", "/api/user/register", "/api/user/login", "/api/health/**", "/api/property/search", "/api/property/detail/**").permitAll()
+                        .requestMatchers("/api/geo/**").permitAll()
+                        .requestMatchers("/api/facility/**", "/api/feature/**").permitAll()
                         .anyRequest().authenticated()
                 )
+
                 // 阻止 Session 存在 Server Side
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);

@@ -8,4 +8,7 @@ import java.util.List;
 public interface UserActionRepository extends JpaRepository<UserAction, Long> {
 
     List<UserAction> findByUserId(Long userId);
+
+    void deleteByUserIdAndPropertyIdAndActionType(Long userId, Long propertyId, String actionType);
+
 }

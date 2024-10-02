@@ -33,14 +33,14 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public String login(String username, String password) {
-        User user = userRepository.findByUsername(username)
+    public String login(String email, String password) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("Invalid password");
         }
-        return jwtTokenProvider.createToken(username, user.getRole());
+        return jwtTokenProvider.createToken(user.getId(), user.getUsername(), user.getRole());
     }
 
     public User findByUsername(String username) {

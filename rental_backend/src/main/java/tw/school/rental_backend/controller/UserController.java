@@ -35,7 +35,7 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
         try {
-            String token = userService.login(user.getUsername(), user.getPassword());
+            String token = userService.login(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(token);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("登入失敗"));

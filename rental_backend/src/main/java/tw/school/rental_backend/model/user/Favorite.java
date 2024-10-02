@@ -25,6 +25,4 @@ public class Favorite {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "modified_time", nullable = false)
-    private LocalDateTime modifiedTime;
 }

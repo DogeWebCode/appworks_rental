@@ -15,8 +15,6 @@ import {
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import SendIcon from "@mui/icons-material/Send";
-import { Stomp } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
 
 // ---------------------------- 日期分隔的樣式 -------------------------------------
 const DateSeparator = styled(Box)(({ theme }) => ({
@@ -47,15 +45,25 @@ const MessageDateSeparator = ({ date }) => (
 
 // ---------------------------- 聊天室樣式 -------------------------------------
 
-const StyledPaper = styled(Paper)({
+const StyledPaper = styled(Paper)(({ theme }) => ({
+  height: "55vh",
+  maxWidth: "800px",
+  margin: "auto", // 居中
   display: "flex",
   flexDirection: "column",
-  height: "100vh",
-  borderRadius: 0,
+  borderRadius: theme.shape.borderRadius,
+  overflow: "hidden",
+  boxShadow: theme.shadows[3],
+}));
+
+const ChatContainer = styled(Box)({
+  display: "flex",
+  flex: 1,
+  overflow: "hidden",
 });
 
 const ChatHeader = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(2),
+  padding: theme.spacing(1, 2),
   backgroundColor: theme.palette.primary.main,
   color: theme.palette.primary.contrastText,
   display: "flex",
@@ -63,7 +71,8 @@ const ChatHeader = styled(Box)(({ theme }) => ({
 }));
 
 const UserList = styled(List)(({ theme }) => ({
-  width: "25%",
+  width: "40%",
+  maxWidth: "200px",
   borderRight: `1px solid ${theme.palette.divider}`,
   overflowY: "auto",
 }));
@@ -78,10 +87,8 @@ const ChatArea = styled(Box)({
 const MessageList = styled(List)(({ theme }) => ({
   flex: 1,
   overflowY: "auto",
-  padding: theme.spacing(2),
+  padding: theme.spacing(1),
   backgroundColor: theme.palette.grey[100],
-  display: "flex",
-  flexDirection: "column",
 }));
 
 const StyledMessageBubble = styled(Box, {
@@ -103,8 +110,9 @@ const StyledMessageBubble = styled(Box, {
 
 const InputArea = styled(Box)(({ theme }) => ({
   display: "flex",
-  padding: theme.spacing(2),
+  padding: theme.spacing(1),
   backgroundColor: theme.palette.background.paper,
+  borderTop: `1px solid ${theme.palette.divider}`,
 }));
 
 // ---------------------------- 聊天室組件 -------------------------------------
@@ -114,95 +122,35 @@ const MessageBubble = ({ isCurrentUser, children }) => (
   </StyledMessageBubble>
 );
 
-const MessageInput = React.memo(
-  ({
-    inputMessage,
-    setInputMessage,
-    sendMessage,
-    isComposing,
-    setIsComposing,
-    disabled,
-  }) => (
-    <InputArea>
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="請輸入訊息"
-        value={inputMessage}
-        onChange={(e) => setInputMessage(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !isComposing) {
-            sendMessage();
-          }
-        }}
-        onCompositionStart={() => setIsComposing(true)}
-        onCompositionEnd={() => setIsComposing(false)}
-        disabled={disabled}
-        sx={{ mr: 1 }}
-      />
-      <IconButton
-        color="primary"
-        onClick={sendMessage}
-        disabled={disabled || !inputMessage.trim()}
-      >
-        <SendIcon />
-      </IconButton>
-    </InputArea>
-  )
-);
-
 // ---------------------------- 聊天室本體 -------------------------------------
 
-const ChatRoom = ({ token, currentUserId }) => {
-  const [messages, setMessages] = useState([]); // 訊息列表
+const ChatRoom = ({
+  token,
+  currentUserId,
+  targetUserId: propTargetUserId,
+  unreadCounts,
+  setUnreadCounts,
+  stompClient,
+  setChatTargetUser,
+}) => {
   const [inputMessage, setInputMessage] = useState(""); // 輸入的訊息
   const [targetUserId, setTargetUserId] = useState(null); // 目標用戶 ID
   const [userList, setUserList] = useState([]); // 用戶列表
   const [targetUserName, setTargetUserName] = useState(""); // 目標用戶名稱
   const [isComposing, setIsComposing] = useState(false); // 是否正在輸入
-  const stompClient = useRef(null); // Stomp 客戶端
   const messageListRef = useRef(null); // 訊息列表的引用
-
   const targetUserIdRef = useRef(targetUserId); // 目標用戶 ID 的引用
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    targetUserIdRef.current = targetUserId; // 更新目標用戶 ID 的引用
+    if (propTargetUserId) {
+      setTargetUserId(propTargetUserId);
+    }
+  }, [propTargetUserId]);
+
+  useEffect(() => {
+    targetUserIdRef.current = targetUserId; // 更新目標用戶 ID
   }, [targetUserId]);
-
-  useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws?token=" + token);
-    stompClient.current = Stomp.over(socket); // 使用 Stomp 包裝 SockJS
-
-    stompClient.current.connect(
-      {},
-      (frame) => {
-        console.log("Connected: " + frame);
-
-        stompClient.current.subscribe("/user/queue/message", (message) => {
-          const newMessage = JSON.parse(message.body);
-
-          // 確保聊天訊息不會跑到別人的聊天室
-          if (
-            (newMessage.senderId === targetUserIdRef.current &&
-              newMessage.receiverId === currentUserId) ||
-            (newMessage.senderId === currentUserId &&
-              newMessage.receiverId === targetUserIdRef.current)
-          ) {
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
-          }
-        });
-      },
-      (error) => {
-        console.error("WebSocket connection error: " + error);
-      }
-    );
-
-    return () => {
-      if (stompClient.current) {
-        stompClient.current.disconnect();
-      }
-    };
-  }, [token, currentUserId]);
 
   useEffect(() => {
     fetch("/api/chat/partners", {
@@ -214,7 +162,7 @@ const ChatRoom = ({ token, currentUserId }) => {
       .then((response) => response.json())
       .then((data) => {
         const filteredUsers = data.filter((user) => user !== currentUserId);
-        setUserList(filteredUsers); // 設定用戶列表
+        setUserList(filteredUsers); // 設置過去聊過天的使用者
       })
       .catch((error) => console.error("Error fetching chat partners:", error));
   }, [token, currentUserId]);
@@ -224,6 +172,62 @@ const ChatRoom = ({ token, currentUserId }) => {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, []);
+
+  useEffect(() => {
+    if (stompClient) {
+      const subscription = stompClient.subscribe(
+        "/user/queue/message",
+        (message) => {
+          const newMessage = JSON.parse(message.body);
+          const { senderId, receiverId } = newMessage;
+
+          // 判斷是否是正在聊天的對象
+          const isCurrentChatPartner =
+            senderId === targetUserId || receiverId === targetUserId;
+
+          if (isCurrentChatPartner) {
+            // 如果是正在聊天的對象，將訊息標記為已讀並更新狀態
+            // 標記訊息為已讀
+            setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+            fetch("/api/chat/messages/read", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ partnerId: targetUserId }),
+            }).catch((error) =>
+              console.error("Error marking messages as read:", error)
+            );
+          }
+        }
+      );
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [stompClient, targetUserId, setUnreadCounts, token]);
+
+  useEffect(() => {
+    if (targetUserId) {
+      fetch(`/api/chat/messages?receiverId=${targetUserId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setMessages(Array.isArray(data) ? data : []);
+          scrollToBottom();
+        })
+        .catch((error) =>
+          console.error("Error fetching chat messages:", error)
+        );
+    }
+  }, [targetUserId, token, scrollToBottom, setMessages]);
 
   const groupMessagesByDate = useCallback((messages) => {
     const groups = {}; // 訊息分組
@@ -242,28 +246,72 @@ const ChatRoom = ({ token, currentUserId }) => {
   }, [messages, scrollToBottom]);
 
   const sendMessage = useCallback(() => {
-    if (stompClient.current && inputMessage && targetUserId) {
+    if (!inputMessage.trim()) {
+      return;
+    }
+
+    try {
       const chatMessage = {
-        message: inputMessage,
+        message: inputMessage.trim(),
         senderId: currentUserId,
         receiverId: targetUserId,
         timestamp: new Date().toISOString(),
+        read: false,
       };
 
-      setMessages((prevMessages) => [...prevMessages, chatMessage]); // 更新訊息
-      stompClient.current.send("/app/message", {}, JSON.stringify(chatMessage));
+      // 更新訊息
+      setMessages((prevMessages) => [...prevMessages, chatMessage]);
+
+      // 原本是 send，後來官方有說下版就移除 method，這邊換成新的 client.publish method
+      if (stompClient && stompClient.connected) {
+        stompClient.publish({
+          destination: "/app/message",
+          body: JSON.stringify(chatMessage),
+          headers: {},
+        });
+      } else {
+        console.error("STOMP client is not connected or initialized.");
+      }
+
       setInputMessage("");
       scrollToBottom();
-    } else {
-      console.log("Select a user and enter a message.");
+    } catch (error) {
+      console.error("Error sending message:", error);
     }
-  }, [inputMessage, targetUserId, currentUserId, scrollToBottom]);
+  }, [
+    inputMessage,
+    targetUserId,
+    currentUserId,
+    scrollToBottom,
+    stompClient,
+    setMessages,
+  ]);
 
   const selectUser = useCallback(
     (userId) => {
       setTargetUserId(userId);
       setTargetUserName(userId);
+      setChatTargetUser(userId);
 
+      // 清除未讀計數
+      setUnreadCounts((prevCounts) => ({
+        ...prevCounts,
+        [userId]: 0,
+      }));
+
+      // 標記訊息為已讀
+      fetch("/api/chat/messages/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ partnerId: userId }),
+      }).catch((error) =>
+        console.error("Error marking messages as read:", error)
+      );
+
+      // 獲取聊天記錄
       fetch(`/api/chat/messages?receiverId=${userId}`, {
         method: "GET",
         headers: {
@@ -279,55 +327,68 @@ const ChatRoom = ({ token, currentUserId }) => {
           console.error("Error fetching chat messages:", error)
         );
     },
-    [token, scrollToBottom]
+    [token, scrollToBottom, setUnreadCounts, setMessages, setChatTargetUser]
   );
 
   // ---------------------------- 渲染畫面 -------------------------------------
 
   return (
-    <StyledPaper
-      elevation={0}
-      sx={{ height: "100vh", display: "flex", flexDirection: "column" }}
-    >
-      <Box display="flex" flexGrow={1} overflow="hidden" height="100vh">
-        <UserList
-          subheader={<ListSubheader>聊天記錄</ListSubheader>}
-          sx={{ overflowY: "auto" }}
-        >
+    <StyledPaper elevation={0}>
+      <ChatContainer>
+        <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
           {userList.map((user) => (
             <ListItemButton key={user} onClick={() => selectUser(user)}>
               <Avatar sx={{ mr: 2 }}>{user[0].toUpperCase()}</Avatar>
               <ListItemText primary={user} />
+              {unreadCounts?.[user] > 0 && (
+                <Box
+                  sx={{
+                    backgroundColor: "red",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: 20,
+                    height: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: 1,
+                    fontSize: 12,
+                  }}
+                >
+                  {unreadCounts[user]}
+                </Box>
+              )}
             </ListItemButton>
           ))}
         </UserList>
-        <ChatArea
-          sx={{
-            flexGrow: 1,
-            display: "flex",
-            flexDirection: "column",
-            height: "100vh",
-          }}
-        >
-          <ChatHeader sx={{ flexShrink: 0 }}>
+
+        <ChatArea>
+          <ChatHeader>
             <Avatar sx={{ mr: 2 }}>
-              {targetUserName ? targetUserName[0].toUpperCase() : "?"}
+              {targetUserName && targetUserName.length > 0
+                ? targetUserName[0].toUpperCase()
+                : propTargetUserId && propTargetUserId.length > 0
+                ? propTargetUserId[0].toUpperCase()
+                : "?"}
             </Avatar>
-            <Typography variant="h6">
-              {targetUserName
-                ? `與 ${targetUserName} 聊天中`
-                : "請選擇想聊天的是誰～"}
+            <Typography variant="h6" align="center">
+              {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
             </Typography>
           </ChatHeader>
-          <Divider sx={{ flexShrink: 0 }} />
-
-          {/* 訊息區域設定為可滾動 */}
-          <MessageList
-            ref={messageListRef}
-            sx={{ flexGrow: 1, overflowY: "auto" }}
-          >
-            {Object.entries(groupMessagesByDate(messages)).map(
-              ([date, msgs]) => (
+          <Divider />
+          <MessageList ref={messageListRef}>
+            {targetUserId &&
+              Object.entries(
+                groupMessagesByDate(
+                  messages.filter(
+                    (msg) =>
+                      (msg.senderId === targetUserId &&
+                        msg.receiverId === currentUserId) ||
+                      (msg.senderId === currentUserId &&
+                        msg.receiverId === targetUserId)
+                  )
+                )
+              ).map(([date, msgs]) => (
                 <React.Fragment key={date}>
                   <MessageDateSeparator date={date} />
                   {msgs.map((msg, index) => (
@@ -367,21 +428,36 @@ const ChatRoom = ({ token, currentUserId }) => {
                     </ListItem>
                   ))}
                 </React.Fragment>
-              )
-            )}
+              ))}
           </MessageList>
-          <Divider sx={{ flexShrink: 0 }} />
-          <MessageInput
-            inputMessage={inputMessage}
-            setInputMessage={setInputMessage}
-            sendMessage={sendMessage}
-            isComposing={isComposing}
-            setIsComposing={setIsComposing}
-            disabled={!targetUserId}
-            sx={{ flexShrink: 0 }}
-          />
+          <Divider />
+          <InputArea>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="請輸入訊息"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isComposing) {
+                  sendMessage();
+                }
+              }}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              disabled={!targetUserId}
+              sx={{ mr: 1 }}
+            />
+            <IconButton
+              color="primary"
+              onClick={sendMessage}
+              disabled={!targetUserId || !inputMessage.trim()}
+            >
+              <SendIcon />
+            </IconButton>
+          </InputArea>
         </ChatArea>
-      </Box>
+      </ChatContainer>
     </StyledPaper>
   );
 };
