@@ -219,7 +219,7 @@ public class PropertyServiceImpl implements PropertyService {
         List<PropertyImage> images = propertyForm.getImages().stream()
                 .map(image -> {
                     String imageUrl = storageService.uploadFile(image, "images/");
-                    log.info("Image URL: " + imageUrl);
+                    log.info("Image URL: {}", imageUrl);
                     if (imageUrl == null || imageUrl.isEmpty()) {
                         throw new RuntimeException("Failed to upload image, URL is null or empty");
                     }

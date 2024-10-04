@@ -8,12 +8,13 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.integration.redis.inbound.RedisInboundChannelAdapter;
 import org.springframework.integration.redis.outbound.RedisPublishingMessageHandler;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.support.ExecutorSubscribableChannel;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -54,7 +55,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Bean
     public TaskScheduler heartBeatScheduler() {
-        return new ConcurrentTaskScheduler();
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("HeartbeatScheduler-");
+        scheduler.initialize();
+        return scheduler;
     }
 
 
@@ -91,7 +96,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider))
                 .setHandshakeHandler(new DefaultHandshakeHandler() {
                     @Override
-                    protected Principal determineUser(ServerHttpRequest request, WebSocketHandler wsHandler, Map<String, Object> attributes) {
+                    protected Principal determineUser(@NonNull ServerHttpRequest request, @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
                         return (Authentication) attributes.get("SPRING_SECURITY_CONTEXT");
                     }
                 })

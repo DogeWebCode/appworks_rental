@@ -47,7 +47,7 @@ public class UserActionServiceImpl implements UserActionService {
         UserActionDTO userActionDTO = new UserActionDTO(user.getId(), property.getId(), actionType, LocalDateTime.now());
 
         // 記錄新的操作到 Redis
-        log.info("Storing action in Redis: " + userActionDTO);
+        log.info("Storing action in Redis: {}", userActionDTO);
         redisTemplate.opsForList().rightPush(cacheKey, userActionDTO);
     }
 
@@ -90,10 +90,10 @@ public class UserActionServiceImpl implements UserActionService {
 
                     userActionRepository.save(userAction);
                 } else {
-                    log.warn("Unexpected object type in Redis for key: " + key);
+                    log.warn("Unexpected object type in Redis for key: {}", key);
                 }
             }
-            log.info("Deleting key from Redis: " + key);
+            log.info("Deleting key from Redis: {}", key);
             // 刪除 Redis 中已處理的記錄
             redisTemplate.delete(key);
         }
@@ -122,7 +122,7 @@ public class UserActionServiceImpl implements UserActionService {
                     // 如果找到「收藏」操作，將其從 Redis 中刪除
                     if ("favorite".equals(actionDTO.getActionType())) {
                         redisTemplate.opsForList().remove(cacheKey, 1, actionObj); // 刪除符合條件的記錄
-                        log.info("Removed favorite action from Redis for user: " + userId + " and property: " + propertyId);
+                        log.info("Removed favorite action from Redis for user: {} and property: {}", userId, propertyId);
                     }
                 }
             }

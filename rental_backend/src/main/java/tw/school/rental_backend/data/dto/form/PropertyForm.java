@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
-import tw.school.rental_backend.data.dto.PropertyLayoutDTO;
 
 import java.math.BigDecimal;
 import java.util.List;

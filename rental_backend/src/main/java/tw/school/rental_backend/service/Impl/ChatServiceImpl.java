@@ -1,6 +1,5 @@
 package tw.school.rental_backend.service.Impl;
 
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import tw.school.rental_backend.message.RedisMessagePublisher;
 import tw.school.rental_backend.model.chat.ChatMessage;
@@ -15,12 +14,10 @@ import java.util.*;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
     private final RedisMessagePublisher redisMessagePublisher;
 
-    public ChatServiceImpl(ChatMessageRepository chatMessageRepository, SimpMessagingTemplate messagingTemplate, RedisMessagePublisher redisMessagePublisher) {
+    public ChatServiceImpl(ChatMessageRepository chatMessageRepository, RedisMessagePublisher redisMessagePublisher) {
         this.chatMessageRepository = chatMessageRepository;
-        this.messagingTemplate = messagingTemplate;
         this.redisMessagePublisher = redisMessagePublisher;
     }
 

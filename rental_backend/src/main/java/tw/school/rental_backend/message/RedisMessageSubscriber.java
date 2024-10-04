@@ -2,14 +2,17 @@ package tw.school.rental_backend.message;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tw.school.rental_backend.model.chat.ChatMessage;
 
 @Component
+@Log4j2
 public class RedisMessageSubscriber implements MessageListener {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -25,7 +28,7 @@ public class RedisMessageSubscriber implements MessageListener {
     }
 
     @Override
-    public void onMessage(Message message, byte[] pattern) {
+    public void onMessage(@NonNull Message message, byte[] pattern) {
         try {
             ChatMessage chatMessage = objectMapper.readValue(message.getBody(), ChatMessage.class);
 
@@ -36,7 +39,7 @@ public class RedisMessageSubscriber implements MessageListener {
                     chatMessage
             );
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to process WebSocket message",e);
         }
     }
 }

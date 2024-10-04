@@ -60,7 +60,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
             // 統計每種類型的出現次數
             propertyTypeCount.put(propertyType, propertyTypeCount.getOrDefault(propertyType, 0) + 1);
-            log.info("Property type count: " + propertyTypeCount);
+            log.info("Property type count: {}", propertyTypeCount);
             viewedDistricts.add(property.getDistrict().getDistrictName());
             viewedCities.add(property.getCity().getCityName());
             avgPrice += property.getPrice();
@@ -70,17 +70,17 @@ public class RecommendationServiceImpl implements RecommendationService {
             propertyScore.put(propertyId, propertyScore.getOrDefault(propertyId, 0) + score);
 
         }
-        log.info("viewedDistricts: " + viewedDistricts);
-        log.info("viewedCities: " + viewedCities);
-        log.info("Property score: " + propertyScore);
+        log.info("viewedDistricts: {}", viewedDistricts);
+        log.info("viewedCities: {}", viewedCities);
+        log.info("Property score: {}", propertyScore);
 
         // 計算平均價格，並設置價格範圍
         avgPrice /= userActions.size();
-        log.info("Average price: " + avgPrice);
+        log.info("Average price: {}", avgPrice);
 
         int priceLowerBound = (int) (avgPrice * 0.8);
         int priceUpperBound = (int) (avgPrice * 1.2);
-        log.info("Price range: " + priceLowerBound + " - " + priceUpperBound);
+        log.info("Price range: {} - {}", priceLowerBound, priceUpperBound);
 
         // 查詢符合條件的房源
         Page<Property> candidatePropertiesPage = propertyRepository.findByCityAndDistrictNamesAndPriceBetween(

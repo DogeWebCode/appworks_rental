@@ -193,16 +193,6 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
                   ],
                 },
                 (details, status) => {
-                  if ("utc_offset_minutes" in details) {
-                    console.log(
-                      `UTC Offset Minutes: ${details.utc_offset_minutes}`
-                    );
-                  } else {
-                    console.warn(
-                      "UTC Offset Minutes not available for this place."
-                    );
-                  }
-
                   if (
                     status === window.google.maps.places.PlacesServiceStatus.OK
                   ) {
