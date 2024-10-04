@@ -10,7 +10,6 @@ import {
   message,
   Badge,
   Dropdown,
-  Menu,
   Row,
   Col,
   Space,
@@ -94,30 +93,28 @@ const HeaderComponent = ({
     setIsChatVisible(true);
   };
 
-  const menu = (
-    <Menu>
-      {/* {token && (
-        <Menu.Item
-          key="username"
-          disabled
-          style={{ cursor: "default", textAlign: "center" }}
-        >
-          {currentUserId}
-        </Menu.Item>
-      )} */}
-      <Menu.Item key="profile" icon={<UserOutlined />}>
-        個人資料
-      </Menu.Item>
-      <Menu.Item key="upload" icon={<UploadOutlined />}>
-        <Link to="/upload-property">上傳房源</Link>
-      </Menu.Item>
-      {token && (
-        <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={onLogout}>
-          登出
-        </Menu.Item>
-      )}
-    </Menu>
-  );
+  const menuItems = [
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "個人資料",
+    },
+    {
+      key: "upload",
+      icon: <UploadOutlined />,
+      label: <Link to="/upload-property">上傳房源</Link>,
+    },
+    ...(token
+      ? [
+          {
+            key: "logout",
+            icon: <LogoutOutlined />,
+            label: "登出",
+            onClick: onLogout, // 確保你有定義 `onLogout` 函數
+          },
+        ]
+      : []),
+  ];
 
   return (
     <Header
@@ -181,7 +178,7 @@ const HeaderComponent = ({
                   />
                 </Button>
 
-                <Dropdown overlay={menu} placement="bottomRight">
+                <Dropdown menu={{ items: menuItems }} placement="bottomRight">
                   <Button icon={<MenuOutlined />}>選單</Button>
                 </Dropdown>
               </>

@@ -24,7 +24,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        log.info("WebSocket handshake initiated: {}", request.getURI());
 
         String token = resolveToken(request);
 
@@ -35,7 +34,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             return true;
         }
 
-        log.warn("WebSocket handshake authentication failed");
         return false;
     }
 

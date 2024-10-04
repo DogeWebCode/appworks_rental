@@ -55,6 +55,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState(null);
   const [mainImageUrl, setMainImageUrl] = useState(null);
+  const [fileList, setFileList] = useState([]);
 
   useEffect(() => {
     if (!token) {
@@ -240,6 +241,10 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
     }));
   }, [mainImageUrl]);
 
+  const handleFileListChange = (info) => {
+    setFileList(info.fileList);
+  };
+
   return (
     <Card className="property-upload-form" style={{ margin: "24px" }}>
       <Row gutter={32}>
@@ -414,6 +419,8 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               rules={[{ required: true, message: "請上傳主圖片" }]}
             >
               <Upload
+                fileList={fileList}
+                onChange={handleFileListChange}
                 maxCount={1}
                 beforeUpload={() => false}
                 listType="picture-card"

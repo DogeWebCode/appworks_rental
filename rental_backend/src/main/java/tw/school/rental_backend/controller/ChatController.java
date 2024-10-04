@@ -34,16 +34,17 @@ public class ChatController {
     @MessageMapping("/message")
     public void processMessage(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
         Principal principal = headerAccessor.getUser();
+
         if (principal != null) {
             chatMessage.setSenderId(principal.getName());
             chatService.saveMessage(chatMessage);
 
-            // 發送訊息給接收者
-            messagingTemplate.convertAndSendToUser(
-                    chatMessage.getReceiverId(),
-                    "/queue/message",
-                    chatMessage
-            );
+//            // 發送訊息給接收者
+//            messagingTemplate.convertAndSendToUser(
+//                    chatMessage.getReceiverId(),
+//                    "/queue/message",
+//                    chatMessage
+//            );
 
             // 更新發送者和接收者的聊天夥伴列表
             List<String> senderChatPartners = chatService.findChatPartners(principal.getName());

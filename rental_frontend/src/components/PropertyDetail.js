@@ -119,6 +119,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
     libraries,
     language: "zh-TW",
     mapIds: [GOOGLE_MAPS_ID],
+    version: "weekly",
   });
 
   const [map, setMap] = useState(null);
@@ -192,6 +193,16 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
                   ],
                 },
                 (details, status) => {
+                  if ("utc_offset_minutes" in details) {
+                    console.log(
+                      `UTC Offset Minutes: ${details.utc_offset_minutes}`
+                    );
+                  } else {
+                    console.warn(
+                      "UTC Offset Minutes not available for this place."
+                    );
+                  }
+
                   if (
                     status === window.google.maps.places.PlacesServiceStatus.OK
                   ) {
@@ -240,7 +251,6 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
       return () => {
         if (advancedMarker) {
-          // For AdvancedMarkerElement, we need to check if it has a map property
           if (advancedMarker.map) {
             advancedMarker.map = null;
           }
@@ -314,10 +324,10 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
         "星期六",
         "星期日",
       ];
+      // 這裡計算是因為 Date().getDay() 返回的 Array，第一位會是星期日，但 google 對於時間的排序會是從星期一開始
       const today = (new Date().getDay() + 6) % 7;
       const todayText = place.opening_hours.weekday_text[today];
       const isOpen = place.opening_hours.isOpen();
-      console.log(today);
 
       return (
         <>

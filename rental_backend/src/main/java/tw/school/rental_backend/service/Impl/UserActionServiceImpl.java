@@ -94,7 +94,7 @@ public class UserActionServiceImpl implements UserActionService {
                 }
             }
             log.info("Deleting key from Redis: " + key);
-            // 刪除 Redis 中已處理的鍵
+            // 刪除 Redis 中已處理的記錄
             redisTemplate.delete(key);
         }
     }

@@ -9,7 +9,6 @@ import HomePage from "./components/HomePage";
 import { message } from "antd";
 import ChatRoom from "./components/ChatRoom";
 import { Client } from "@stomp/stompjs";
-import SockJS from "sockjs-client";
 import PropertyUploadForm from "./components/PropertyUploadForm";
 
 function App() {
@@ -60,17 +59,14 @@ function App() {
   useEffect(() => {
     if (token && currentUserId) {
       stompClient.current = new Client({
-        webSocketFactory: () => new SockJS(`${wsEndpoint}?token=${token}`),
-
-        // 每 20 秒檢查一次有沒有來自 Server 的心跳
-        heartbeatIncoming: 20000,
-        // 每 20 秒發送一次心跳到 Server，證明自己還活著
+        // brokerURL: `wss://goodshiba.com/ws?token=${token}`,
+        brokerURL: `ws://localhost:8080/ws?token=${token}`,
+        reconnectDelay: 5000, // 設置重新連接的延遲
+        heartbeatIncoming: 20000, // 設置心跳檢查
         heartbeatOutgoing: 20000,
-        // 斷線的時候，每 5 秒嘗試連線一次
-        reconnectDelay: 5000,
 
         onConnect: (frame) => {
-          console.log("connect: " + frame);
+          console.log("Connected: " + frame);
 
           // 訂閱新訊息
           stompClient.current.subscribe("/user/queue/message", (message) => {
@@ -99,6 +95,7 @@ function App() {
           console.error("WebSocket error", evt);
         },
       });
+
       stompClient.current.activate();
     }
 
