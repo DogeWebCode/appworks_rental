@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { message } from "antd";
 import {
   Box,
   Paper,
@@ -132,6 +133,7 @@ const ChatRoom = ({
   setUnreadCounts,
   stompClient,
   setChatTargetUser,
+  wsConnected,
 }) => {
   const [inputMessage, setInputMessage] = useState(""); // 輸入的訊息
   const [targetUserId, setTargetUserId] = useState(null); // 目標用戶 ID
@@ -174,41 +176,47 @@ const ChatRoom = ({
   }, []);
 
   useEffect(() => {
-    if (stompClient) {
+    if (stompClient && wsConnected) {
       const subscription = stompClient.subscribe(
         "/user/queue/message",
         (message) => {
           const newMessage = JSON.parse(message.body);
           const { senderId, receiverId } = newMessage;
 
-          // 判斷是否是正在聊天的對象
-          const isCurrentChatPartner =
-            senderId === targetUserId || receiverId === targetUserId;
+          // 確保這不是自己本地已經發送的訊息
+          if (!newMessage.isLocal) {
+            const isCurrentChatPartner =
+              senderId === targetUserId || receiverId === targetUserId;
 
-          if (isCurrentChatPartner) {
-            // 如果是正在聊天的對象，將訊息標記為已讀並更新狀態
-            // 標記訊息為已讀
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
+            if (isCurrentChatPartner) {
+              // 更新訊息到畫面
+              setMessages((prevMessages) => [...prevMessages, newMessage]);
 
-            fetch("/api/chat/messages/read", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ partnerId: targetUserId }),
-            }).catch((error) =>
-              console.error("Error marking messages as read:", error)
-            );
+              // 標記消息為已讀
+              fetch("/api/chat/messages/read", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ partnerId: targetUserId }),
+              }).catch((error) =>
+                console.error("Error marking messages as read:", error)
+              );
+            }
           }
         }
       );
 
       return () => {
-        subscription.unsubscribe();
+        if (subscription) {
+          subscription.unsubscribe();
+        }
       };
+    } else {
+      message.warning("尚未連線至聊天室");
     }
-  }, [stompClient, targetUserId, setUnreadCounts, token]);
+  }, [stompClient, targetUserId, setUnreadCounts, token, wsConnected]);
 
   useEffect(() => {
     if (targetUserId) {
@@ -257,6 +265,7 @@ const ChatRoom = ({
         receiverId: targetUserId,
         timestamp: new Date().toISOString(),
         read: false,
+        isLocal: true,
       };
 
       // 更新訊息
@@ -266,7 +275,10 @@ const ChatRoom = ({
       if (stompClient && stompClient.connected) {
         stompClient.publish({
           destination: "/app/message",
-          body: JSON.stringify(chatMessage),
+          body: JSON.stringify({
+            ...chatMessage,
+            isLocal: false, // 發送到服務器時移除本地標記
+          }),
           headers: {},
         });
       } else {
@@ -334,6 +346,13 @@ const ChatRoom = ({
 
   return (
     <StyledPaper elevation={0}>
+      {!wsConnected && (
+        <Box
+          sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}
+        >
+          <Typography>正在連接聊天服務，可重新登入修正。</Typography>
+        </Box>
+      )}
       <ChatContainer>
         <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
           {userList.map((user) => (
@@ -393,7 +412,7 @@ const ChatRoom = ({
                   <MessageDateSeparator date={date} />
                   {msgs.map((msg, index) => (
                     <ListItem
-                      key={msg.id || index}
+                      key={msg.id || msg.timestamp || index}
                       sx={{
                         justifyContent:
                           msg.senderId === currentUserId

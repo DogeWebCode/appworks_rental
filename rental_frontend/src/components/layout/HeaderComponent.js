@@ -40,13 +40,23 @@ const HeaderComponent = ({
   totalUnreadCount,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [isRegisterModalVisible, setIsRegisterModalVisible] = useState(false);
 
   const handleLoginClick = () => {
-    setIsLoginModalVisible(true); // 顯示登入彈窗
+    setIsLoginModalVisible(true); // 顯示登入表單
   };
 
   const handleModalClose = () => {
-    setIsLoginModalVisible(false); // 隱藏登入彈窗
+    setIsLoginModalVisible(false); // 隱藏登入表單
+  };
+
+  const handleRegisterClick = () => {
+    setIsLoginModalVisible(false); // 關閉登入表單
+    setIsRegisterModalVisible(true); // 顯示註冊表單
+  };
+
+  const handleRegisterModalClose = () => {
+    setIsRegisterModalVisible(false); // 隱藏註冊表單
   };
 
   const navigate = useNavigate();
@@ -88,6 +98,50 @@ const HeaderComponent = ({
     }
   };
 
+  const handleSubmitRegister = async (values) => {
+    const {
+      username,
+      email,
+      password,
+      confirmPassword,
+      mobilePhone,
+      homePhone,
+    } = values;
+    if (password !== confirmPassword) {
+      message.error("密碼與確認密碼不一致！");
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch("/api/user/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          mobilePhone,
+          homePhone,
+        }),
+      });
+
+      if (response.ok) {
+        message.success("註冊成功，請登入！");
+        setIsRegisterModalVisible(false); // 註冊成功後關閉註冊彈窗
+        setIsLoginModalVisible(true); // 打開登入彈窗
+      } else {
+        message.error("註冊失敗，請稍後再試！");
+      }
+    } catch (error) {
+      console.error("Error during registration:", error);
+      message.error("註冊過程中發生錯誤，請稍後再試！");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleChatClick = () => {
     setChatTargetUser("");
     setIsChatVisible(true);
@@ -110,7 +164,7 @@ const HeaderComponent = ({
             key: "logout",
             icon: <LogoutOutlined />,
             label: "登出",
-            onClick: onLogout, // 確保你有定義 `onLogout` 函數
+            onClick: onLogout,
           },
         ]
       : []),
@@ -219,6 +273,89 @@ const HeaderComponent = ({
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
               登入
+            </Button>
+          </Form.Item>
+          <Form.Item>
+            <Form.Item>
+              <Typography.Text>
+                還沒有帳號嗎？{" "}
+                <Button type="link" onClick={handleRegisterClick}>
+                  立即註冊
+                </Button>
+              </Typography.Text>
+            </Form.Item>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 註冊表單 */}
+      <Modal
+        title="註冊"
+        open={isRegisterModalVisible}
+        onCancel={handleRegisterModalClose}
+        footer={null}
+      >
+        <Form layout="vertical" onFinish={handleSubmitRegister}>
+          <Form.Item
+            label="使用者名稱(會呈現在網頁上)"
+            name="username"
+            rules={[{ required: true, message: "請輸入使用者名稱!" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="電子信箱(登入用)"
+            name="email"
+            rules={[
+              { required: true, message: "請輸入電子信箱!" },
+              { type: "email", message: "請輸入有效的電子信箱！" },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="密碼"
+            name="password"
+            rules={[{ required: true, message: "請輸入密碼!" }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            label="確認密碼"
+            name="confirmPassword"
+            rules={[{ required: true, message: "請再次輸入密碼!" }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            label="手機號碼"
+            name="mobilePhone"
+            rules={[
+              { required: true, message: "請輸入手機號碼!" },
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "請輸入有效的手機號碼!",
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            label="住家電話"
+            name="homePhone"
+            rules={[
+              { required: false, message: "請輸入住家電話!" },
+              {
+                pattern: /^[0-9]{10}$/,
+                message: "請輸入有效的住家電話!",
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block>
+              註冊
             </Button>
           </Form.Item>
         </Form>

@@ -18,6 +18,9 @@ function App() {
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [chatTargetUser, setChatTargetUser] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [wsConnected, setWsConnected] = useState(false);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
   const totalUnreadCount = Object.values(unreadCounts).reduce(
     (sum, count) => sum + count,
     0
@@ -27,6 +30,29 @@ function App() {
     process.env.NODE_ENV === "development"
       ? process.env.REACT_APP_WS_ENDPOINT_DEV
       : process.env.REACT_APP_WS_ENDPOINT_PROD;
+
+  const handleWebSocketError = (errorMessage) => {
+    // 設置 WebSocket 連接狀態為斷開
+    setWsConnected(false);
+
+    // 如果尚未超過最大重連次數，嘗試重連
+    if (reconnectAttempts.current < maxReconnectAttempts) {
+      reconnectAttempts.current += 1;
+      console.log(
+        `嘗試重新連接... (${reconnectAttempts.current}/${maxReconnectAttempts})`
+      );
+
+      // 這裡可以直接嘗試重啟 stompClient 連接
+      if (stompClient.current) {
+        stompClient.current.deactivate(); // 先停用現有的連接
+        setTimeout(() => {
+          stompClient.current.activate(); // 然後重新啟動連接
+        }, 5000); // 設定 5 秒的延遲後重新連接
+      }
+    } else {
+      console.error("WebSocket 連接失敗: ", errorMessage);
+    }
+  };
 
   // 檢查 Token 是否有效
   useEffect(() => {
@@ -59,14 +85,16 @@ function App() {
   useEffect(() => {
     if (token && currentUserId) {
       stompClient.current = new Client({
-        // brokerURL: `wss://goodshiba.com/ws?token=${token}`,
-        brokerURL: `ws://localhost:8080/ws?token=${token}`,
+        brokerURL: `wss://goodshiba.com/ws?token=${token}`,
+        // brokerURL: `ws://localhost:8080/ws?token=${token}`,
         reconnectDelay: 5000, // 設置重新連接的延遲
         heartbeatIncoming: 20000, // 設置心跳檢查
         heartbeatOutgoing: 20000,
 
         onConnect: (frame) => {
           console.log("Connected: " + frame);
+          setWsConnected(true);
+          reconnectAttempts.current = 0;
 
           // 訂閱新訊息
           stompClient.current.subscribe("/user/queue/message", (message) => {
@@ -84,15 +112,17 @@ function App() {
 
         onStompError: (frame) => {
           console.error("Broker reported error: " + frame.headers["message"]);
-          console.error("Additional details: " + frame.body);
+          handleWebSocketError("STOMP Error");
         },
 
         onWebSocketClose: (evt) => {
           console.log("WebSocket closed", evt);
+          handleWebSocketError("Connection closed");
         },
 
         onWebSocketError: (evt) => {
           console.error("WebSocket error", evt);
+          handleWebSocketError("Connection error");
         },
       });
 
@@ -127,6 +157,7 @@ function App() {
     return () => {
       if (stompClient.current) {
         stompClient.current.deactivate();
+        setWsConnected(false); // 斷開連接時更新狀態
         console.log("WebSocket connection closed");
       }
     };
@@ -153,6 +184,11 @@ function App() {
 
   // 顯示聊天室並設置聊天對象
   const showChat = (targetUserId) => {
+    if (!wsConnected) {
+      console.log(wsConnected);
+      message.warning("正在嘗試連接聊天服務，請稍後再試。");
+      return;
+    }
     if (targetUserId) {
       setChatTargetUser(targetUserId);
       setIsChatVisible(true);
@@ -275,6 +311,7 @@ function App() {
               unreadCounts={unreadCounts}
               setUnreadCounts={setUnreadCounts}
               stompClient={stompClient.current}
+              wsConnected={wsConnected}
             />
           </div>
         </div>
