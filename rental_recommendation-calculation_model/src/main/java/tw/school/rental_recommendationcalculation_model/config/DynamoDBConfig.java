@@ -14,9 +14,6 @@ public class DynamoDBConfig {
     @Value("${amazon.aws.region}")
     private String amazonAWSRegion;
 
-    @Value("${amazon.dynamodb.endpoint}")
-    private String dynamoDBEndpoint;
-
     @Bean
     public DynamoDbEnhancedClient dynamoDbEnhancedClient() {
         return DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient()).build();

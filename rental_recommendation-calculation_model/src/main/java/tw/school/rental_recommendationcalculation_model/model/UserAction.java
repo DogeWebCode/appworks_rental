@@ -43,7 +43,6 @@ public class UserAction {
         return actionType;
     }
 
-    // 忽略該屬性，不存儲到 DynamoDB
     @DynamoDbIgnore
     public LocalDateTime getActionDateTime() {
         return LocalDateTime.ofEpochSecond(actionTime, 0, ZoneOffset.UTC);

@@ -1,14 +1,12 @@
 package tw.school.rental_recommendationcalculation_model.service;
 
+
+import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import tw.school.rental_recommendationcalculation_model.model.Property;
 import tw.school.rental_recommendationcalculation_model.model.UserAction;
 import tw.school.rental_recommendationcalculation_model.repository.dynamo.UserActionRepository;
@@ -25,15 +23,13 @@ public class RecommendationService {
     private final PropertyRepository propertyRepository;
     private final RecommendationHelperService recommendationHelperService;
     private final ApplicationContext context;
-    private final DynamoDbClient dynamoDbClient;
 
 
-    public RecommendationService(UserActionRepository userActionRepository, PropertyRepository propertyRepository, RecommendationHelperService recommendationHelperService, ConfigurableApplicationContext context, DynamoDbClient dynamoDbClient) {
+    public RecommendationService(UserActionRepository userActionRepository, PropertyRepository propertyRepository, RecommendationHelperService recommendationHelperService, ConfigurableApplicationContext context) {
         this.userActionRepository = userActionRepository;
         this.propertyRepository = propertyRepository;
         this.recommendationHelperService = recommendationHelperService;
         this.context = context;
-        this.dynamoDbClient = dynamoDbClient;
     }
 
     @Transactional
@@ -45,11 +41,11 @@ public class RecommendationService {
             return;
         }
 
-        // 根據用戶ID將操作記錄分組
+        // 根據用戶 ID 將操作記錄分組
         Map<String, List<UserAction>> actionsByUser = allUserActions.stream()
                 .collect(Collectors.groupingBy(UserAction::getUserId));
 
-        // 遍歷每個用戶的行為，並計算推薦
+        // 遍歷每個用戶的行為，然後計算推薦房源再儲存到 mysql
         for (Map.Entry<String, List<UserAction>> entry : actionsByUser.entrySet()) {
             String userId = entry.getKey();
             List<UserAction> userActions = entry.getValue();
@@ -59,23 +55,9 @@ public class RecommendationService {
             calculateAndSaveRecommendations(Long.parseLong(userId), userActions);
         }
 
-        // 構建要插入的項目
-        Map<String, AttributeValue> item = new HashMap<>();
-        item.put("InstanceId", AttributeValue.builder().s("i-002b5bbc5b9f92718").build());
-        item.put("Status", AttributeValue.builder().s("completed").build());
-        item.put("UpdatedAt", AttributeValue.builder().s(new Date().toString()).build());
-
-        // 創建 PutItem 請求
-        PutItemRequest request = PutItemRequest.builder()
-                .tableName("EC2Status")
-                .item(item)
-                .build();
-
-        // 將項目插入 DynamoDB
-        dynamoDbClient.putItem(request);
-
-        // 確保所有操作完成後再關閉
-        log.info("所有推薦計算已完成，準備關閉程序。");
+        // 透過下面這個 log 寫到 CloudWatch 讓 EventBridge 去觸發 CloseEC2 lambda
+        log.info("Recommendation Calculation Completed");
+        log.info("所有推薦計算已完成，準備關閉程式。");
 
         new Thread(() -> {
             try {
