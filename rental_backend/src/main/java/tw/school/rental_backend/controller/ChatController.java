@@ -3,19 +3,21 @@ package tw.school.rental_backend.controller;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.chat.ChatMessage;
 import tw.school.rental_backend.service.ChatService;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Log4j2
 @RequestMapping("/api/chat")
@@ -24,44 +26,28 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final MessageHandler redisOutboundAdapter;
 
-    public ChatController(ChatService chatService, SimpMessagingTemplate messagingTemplate) {
+    public ChatController(ChatService chatService, MessageHandler redisOutboundAdapter) {
         this.chatService = chatService;
-        this.messagingTemplate = messagingTemplate;
+        this.redisOutboundAdapter = redisOutboundAdapter;
     }
 
     @MessageMapping("/message")
     public void processMessage(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
-        Principal principal = headerAccessor.getUser();
+        try {
+            String senderId = Objects.requireNonNull(headerAccessor.getUser()).getName();
+            chatMessage.setSenderId(senderId);
 
-        if (principal != null) {
-            chatMessage.setSenderId(principal.getName());
+            // 保存訊息到 MongoDB
             chatService.saveMessage(chatMessage);
 
-//            // 發送訊息給接收者
-//            messagingTemplate.convertAndSendToUser(
-//                    chatMessage.getReceiverId(),
-//                    "/queue/message",
-//                    chatMessage
-//            );
-
-            // 更新發送者和接收者的聊天夥伴列表
-            List<String> senderChatPartners = chatService.findChatPartners(principal.getName());
-            messagingTemplate.convertAndSendToUser(
-                    principal.getName(), // 發送者
-                    "/queue/partners",
-                    senderChatPartners
-            );
-
-            List<String> receiverChatPartners = chatService.findChatPartners(chatMessage.getReceiverId());
-            messagingTemplate.convertAndSendToUser(
-                    chatMessage.getReceiverId(), // 接收者
-                    "/queue/partners",
-                    receiverChatPartners
-            );
-        } else {
-            log.warn("No principal found in header accessor.");
+            // 發送訊息到 Redis
+            Message<ChatMessage> message = MessageBuilder.withPayload(chatMessage).build();
+            redisOutboundAdapter.handleMessage(message);
+            log.info("Sending message to Redis: {}", chatMessage);
+        } catch (Exception e) {
+            log.error("Failed to send message to Redis", e);
         }
     }
 
@@ -110,7 +96,7 @@ public class ChatController {
     public ResponseEntity<?> getUnreadMessageCount(Authentication authentication) {
         try {
             String currentUserId = authentication.getName();
-            Map<String,Integer> unreadMessageCount = chatService.findUnreadMessageCount(currentUserId);
+            Map<String, Integer> unreadMessageCount = chatService.findUnreadMessageCount(currentUserId);
             return ResponseEntity.ok(unreadMessageCount);
         } catch (Exception e) {
             log.error("Failed to get unread message count.", e);

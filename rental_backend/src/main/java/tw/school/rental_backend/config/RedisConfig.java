@@ -17,6 +17,8 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import tw.school.rental_backend.message.RedisMessageSubscriber;
 
+import java.util.concurrent.Executors;
+
 
 @Configuration
 public class RedisConfig {
@@ -55,6 +57,7 @@ public class RedisConfig {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
         container.addMessageListener(subscriber, new PatternTopic("chat-messages"));
+        container.setTaskExecutor(Executors.newSingleThreadExecutor());
         return container;
     }
 

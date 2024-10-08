@@ -4,16 +4,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.listener.RedisMessageListenerContainer;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.server.ServerHttpRequest;
-import org.springframework.integration.redis.inbound.RedisInboundChannelAdapter;
 import org.springframework.integration.redis.outbound.RedisPublishingMessageHandler;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.support.ExecutorSubscribableChannel;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.socket.WebSocketHandler;
@@ -35,47 +34,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private String allowedOrigins;
 
     private final JwtTokenProvider jwtTokenProvider;
-
     private final RedisConnectionFactory redisConnectionFactory;
+    private final RedisTemplate<String, Object> redisTemplate;
 
-    public WebSocketConfig(JwtTokenProvider jwtTokenProvider, RedisConnectionFactory redisConnectionFactory) {
+    public WebSocketConfig(JwtTokenProvider jwtTokenProvider, RedisConnectionFactory redisConnectionFactory, RedisTemplate<String, Object> redisTemplate) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.redisConnectionFactory = redisConnectionFactory;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/queue", "/topic")
-                .setTaskScheduler(heartBeatScheduler())
-                .setHeartbeatValue(new long[]{10000, 10000});
-
         config.setApplicationDestinationPrefixes("/app");
         config.setUserDestinationPrefix("/user");
     }
 
     @Bean
-    public TaskScheduler heartBeatScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(1);
-        scheduler.setThreadNamePrefix("HeartbeatScheduler-");
-        scheduler.initialize();
-        return scheduler;
-    }
-
-
-    @Bean
-    public RedisMessageListenerContainer webSocketRedisContainer() {
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(redisConnectionFactory);
-        return container;
-    }
-
-    @Bean
-    public RedisInboundChannelAdapter redisInboundChannelAdapter(RedisConnectionFactory redisConnectionFactory) {
-        RedisInboundChannelAdapter adapter = new RedisInboundChannelAdapter(redisConnectionFactory);
-        adapter.setTopics("chat-messages"); // 設置 Redis 訂閱的頻道名稱或模式
-        adapter.setOutputChannel(myClientOutboundChannel()); // 指定消息的輸出通道
-        return adapter;
+    public MessageChannel myClientInboundChannel() {
+        return new ExecutorSubscribableChannel();
     }
 
     @Bean
@@ -84,10 +60,26 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     @Bean
-    public MessageHandler redisOutboundChannelAdapter() {
+    public MessageChannel myBrokerChannel() {
+        return new ExecutorSubscribableChannel();
+    }
+
+    @Bean
+    public MessageHandler redisOutboundAdapter() {
         RedisPublishingMessageHandler handler = new RedisPublishingMessageHandler(redisConnectionFactory);
+        handler.setSerializer(redisTemplate.getValueSerializer());
         handler.setTopic("chat-messages");
         return handler;
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor().corePoolSize(4).maxPoolSize(10);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.taskExecutor().corePoolSize(4).maxPoolSize(10);
     }
 
     @Override
@@ -102,6 +94,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 })
                 .setAllowedOrigins(allowedOrigins);
     }
+
+    @Bean
+    public ThreadPoolTaskScheduler heartBeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("HeartbeatScheduler-");
+        scheduler.initialize();
+        return scheduler;
+    }
 }
-
-

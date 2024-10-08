@@ -42,7 +42,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/me")
+    @GetMapping("/info")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         String username = authentication.getName();
         User user = userService.findByUsername(username);

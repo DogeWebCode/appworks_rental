@@ -9,8 +9,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyDetailDTO;
@@ -34,7 +32,7 @@ public class PropertyController {
     private final UserService userService;
 
 
-    public PropertyController(RecommendationService recommendationService, UserService userService, PropertyService propertyService) {
+    public PropertyController(UserService userService, PropertyService propertyService, RecommendationService recommendationService) {
         this.recommendationService = recommendationService;
         this.userService = userService;
         this.propertyService = propertyService;
@@ -94,12 +92,14 @@ public class PropertyController {
     }
 
     @GetMapping("/recommendation")
-    public ResponseEntity<?> getRecommendation(Authentication authentication, @PageableDefault(sort = "createdAt", size = 12) Pageable pageable) {
+    public ResponseEntity<?> getRecommendation(Authentication authentication, @PageableDefault(sort = "score", size = 12) Pageable pageable) {
         try {
+
             String username = authentication.getName();
             User user = userService.findByUsername(username);
 
             PropertyResponseDTO<List<PropertyDTO>> recommendProperty = recommendationService.recommendPropertyForUser(user.getId(), pageable);
+
             return ResponseEntity.ok(recommendProperty);
         } catch (RuntimeException e) {
             log.error("推薦系統發生錯誤：{}", e.getMessage());
@@ -114,9 +114,9 @@ public class PropertyController {
     }
 
     @PostMapping(path = "/create", consumes = {"multipart/form-data"})
-    public ResponseEntity<String> createProperty(@ModelAttribute PropertyForm propertyForm) {
+    public ResponseEntity<String> createProperty(@ModelAttribute PropertyForm propertyForm,Authentication authentication) {
         // 獲取當前使用者
-        String username = getCurrentUserUsername();
+        String username = authentication.getName();
 
         // 通過使用者名稱獲取使用者對象
         User user = userService.findByUsername(username);
@@ -128,16 +128,5 @@ public class PropertyController {
         propertyService.createProperty(propertyForm);
 
         return new ResponseEntity<>("Property created successfully!", HttpStatus.CREATED);
-    }
-
-    // TODO : 挪方法到 Service
-    // 獲取當前登入的使用者名稱
-    private String getCurrentUserUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
-        }
     }
 }

@@ -2,6 +2,7 @@ package tw.school.rental_backend.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.FavoriteDTO;
 import tw.school.rental_backend.data.dto.PropertyResponseDTO;
@@ -24,7 +25,7 @@ public class FavoriteController {
     }
 
     @PostMapping("/{propertyId}")
-    public ResponseEntity<?> addFavorite(HttpServletRequest request, @PathVariable Long propertyId) {
+    public ResponseEntity<?> addFavorite(HttpServletRequest request, @PathVariable Long propertyId, Authentication authentication) {
         String token = jwtTokenProvider.resolveToken(request);  // 從請求中提取 JWT Token
         Long userId = jwtTokenProvider.getUserId(token);  // 從 Token 中提取 userId
         favoriteService.addFavorite(userId, propertyId);

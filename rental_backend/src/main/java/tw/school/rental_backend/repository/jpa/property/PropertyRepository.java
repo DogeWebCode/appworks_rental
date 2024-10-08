@@ -16,9 +16,9 @@ import java.util.Set;
 @Repository
 public interface PropertyRepository extends JpaRepository<Property, Long> {
 
-    Page<Property> findByIdIn(List<Long> id, Pageable pageable);
+    List<Property> findByIdIn(List<Long> id);
 
-    Page<Property> findTop12ByOrderByCreatedAtDesc(Pageable pageable);
+    List<Property> findTop12ByOrderByCreatedAtDesc();
 
     Page<Property> findTop12ByPriceBetweenOrderByCreatedAtDesc(int priceLowerBound, int priceUpperBound, Pageable pageable);
 

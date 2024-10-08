@@ -1,8 +1,8 @@
 package tw.school.rental_backend.controller;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tw.school.rental_backend.data.dto.UserActionRequest;
 import tw.school.rental_backend.model.property.Property;
@@ -16,6 +16,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user-action")
+@Log4j2
 public class UserActionController {
 
     private final UserActionService userActionService;
@@ -29,23 +30,28 @@ public class UserActionController {
     }
 
     @PostMapping("/{propertyId}")
-    public ResponseEntity<?> recordUserAction(@PathVariable("propertyId") Long propertyId, @RequestBody UserActionRequest request) {
-        String username = getCurrentUserUsername();
+    public ResponseEntity<?> recordUserAction(@PathVariable("propertyId") Long propertyId, @RequestBody UserActionRequest request, Authentication authentication) {
+        String username = authentication.getName();
         User user = userService.findByUsername(username);
-
         Property property = propertyService.getPropertyById(propertyId);
 
-        userActionService.recordUserAction(user, property, request.getActionType());
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "使用者動作紀錄成功");
-
-        return ResponseEntity.ok(response);
+        try {
+            userActionService.recordUserAction(user, property, request.getActionType());
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "使用者動作紀錄成功");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("記錄使用者動作時發生錯誤", e);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "記錄使用者動作時發生錯誤: " + e.getMessage());
+            errorResponse.put("exceptionType", e.getClass().getName());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
     }
 
     @DeleteMapping("/{propertyId}")
-    public ResponseEntity<?> removeFavoriteAction(@PathVariable("propertyId") Long propertyId) {
-        String username = getCurrentUserUsername();
+    public ResponseEntity<?> removeFavoriteAction(@PathVariable("propertyId") Long propertyId, Authentication authentication) {
+        String username = authentication.getName();
         User user = userService.findByUsername(username);
 
         userActionService.removeFavoriteAction(user.getId(), propertyId);
@@ -54,16 +60,5 @@ public class UserActionController {
         response.put("message", "刪除使用者收藏紀錄成功");
 
         return ResponseEntity.ok(response);
-    }
-
-
-    // 獲取當前使用者的用戶名
-    private String getCurrentUserUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
-        }
     }
 }
