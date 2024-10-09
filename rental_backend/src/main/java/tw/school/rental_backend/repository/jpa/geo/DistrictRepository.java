@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface DistrictRepository extends JpaRepository<District, Long> {
-    Optional<District> findByDistrictName(String DistrictName);
+    List<District> findByDistrictName(String DistrictName);
 
     Optional<District> findByDistrictNameAndCity(String districtName, City city);
 

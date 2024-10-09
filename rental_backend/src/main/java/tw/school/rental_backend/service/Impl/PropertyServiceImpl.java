@@ -28,11 +28,14 @@ import tw.school.rental_backend.repository.jpa.geo.RoadRepository;
 import tw.school.rental_backend.repository.jpa.property.FacilityRepository;
 import tw.school.rental_backend.repository.jpa.property.*;
 import tw.school.rental_backend.repository.jpa.user.UserRepository;
+import tw.school.rental_backend.service.GeocodingService;
 import tw.school.rental_backend.service.PropertyService;
+import tw.school.rental_backend.data.dto.LatLngDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,9 +53,10 @@ public class PropertyServiceImpl implements PropertyService {
     private final FacilityRepository facilityRepository;
     private final PropertyLayoutRepository propertyLayoutRepository;
     private final StorageService storageService;
+    private final GeocodingService geocodingService;
 
 
-    public PropertyServiceImpl(PropertyRepository propertyRepository, PropertyMapper propertyMapper, PropertyDetailMapper propertyDetailMapper, UserRepository userRepository, CityRepository cityRepository, DistrictRepository districtRepository, RoadRepository roadRepository, FeatureRepository featureRepository, FacilityRepository facilityRepository, PropertyLayoutRepository propertyLayoutRepository, StorageService storageService) {
+    public PropertyServiceImpl(PropertyRepository propertyRepository, PropertyMapper propertyMapper, PropertyDetailMapper propertyDetailMapper, UserRepository userRepository, CityRepository cityRepository, DistrictRepository districtRepository, RoadRepository roadRepository, FeatureRepository featureRepository, FacilityRepository facilityRepository, PropertyLayoutRepository propertyLayoutRepository, StorageService storageService, GeocodingService geocodingService) {
         this.propertyRepository = propertyRepository;
         this.propertyMapper = propertyMapper;
         this.propertyDetailMapper = propertyDetailMapper;
@@ -64,6 +68,7 @@ public class PropertyServiceImpl implements PropertyService {
         this.facilityRepository = facilityRepository;
         this.propertyLayoutRepository = propertyLayoutRepository;
         this.storageService = storageService;
+        this.geocodingService = geocodingService;
     }
 
     @Override
@@ -145,20 +150,20 @@ public class PropertyServiceImpl implements PropertyService {
             property.setStatus(propertyForm.getStatus());
         }
 
-        // TODO:這裏之後要換成串 GoogleAPI 拿回經緯度
-        if (propertyForm.getLatitude() == null) {
-            property.setLatitude(BigDecimal.valueOf(22.55));
-        } else {
-            property.setLatitude(propertyForm.getLatitude());
-        }
+        String fullAddress = propertyForm.getCityName() + propertyForm.getDistrictName() + propertyForm.getRoadName() + propertyForm.getAddress();
+        log.info(fullAddress);
+        // 使用 Google API 獲取經緯度
+        if (propertyForm.getLatitude() == null || propertyForm.getLongitude() == null) {
+            Optional<LatLngDTO> latLng = geocodingService.getLatLng(fullAddress);
 
-        // TODO:這裏之後要換成串 GoogleAPI 拿回經緯度
-        if (propertyForm.getLongitude() == null) {
-            property.setLongitude(BigDecimal.valueOf(121.81));
-        } else {
-            property.setLongitude(propertyForm.getLongitude());
+            if (latLng.isPresent()) {
+                // 如果有經緯度值
+                property.setLatitude(BigDecimal.valueOf(latLng.get().getLat()));
+                property.setLongitude(BigDecimal.valueOf(latLng.get().getLng()));
+            } else {
+                throw new RuntimeException("無法通過地址獲取經緯度");
+            }
         }
-
         // 設置房東
         User user = userRepository.findById(propertyForm.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -167,10 +172,10 @@ public class PropertyServiceImpl implements PropertyService {
         // 設置地區
         City city = cityRepository.findByCityName(propertyForm.getCityName())
                 .orElseThrow(() -> new RuntimeException("City not found"));
-        District district = districtRepository.findByDistrictName(propertyForm.getDistrictName())
-                .orElseThrow(() -> new RuntimeException("District not found"));
-        Road road = roadRepository.findByRoadName(propertyForm.getRoadName())
-                .orElseThrow(() -> new RuntimeException("Road not found"));
+        District district = districtRepository.findByDistrictNameAndCity(propertyForm.getDistrictName(), city)
+                .orElseThrow(() -> new RuntimeException("District not found in the city: " + propertyForm.getCityName()));
+        Road road = roadRepository.findByRoadNameAndDistrict(propertyForm.getRoadName(), district)
+                .orElseThrow(() -> new RuntimeException("Road not found in the district and city"));
         property.setCity(city);
         property.setDistrict(district);
         property.setRoad(road);

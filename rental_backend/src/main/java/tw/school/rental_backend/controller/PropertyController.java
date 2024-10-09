@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tw.school.rental_backend.data.dto.DataResponseDTO;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyDetailDTO;
 import tw.school.rental_backend.data.dto.PropertyResponseDTO;
@@ -114,7 +115,12 @@ public class PropertyController {
     }
 
     @PostMapping(path = "/create", consumes = {"multipart/form-data"})
-    public ResponseEntity<String> createProperty(@ModelAttribute PropertyForm propertyForm,Authentication authentication) {
+    public ResponseEntity<DataResponseDTO<String>> createProperty(@ModelAttribute PropertyForm propertyForm, Authentication authentication) {
+
+        log.info("開始創建房源");
+        log.info("主圖片: {}", propertyForm.getMainImage()); // 這裡可以檢查是否接收到主圖片
+        log.info("其他圖片: {}", propertyForm.getImages());
+
         // 獲取當前使用者
         String username = authentication.getName();
 
@@ -127,6 +133,9 @@ public class PropertyController {
         // 創建房源
         propertyService.createProperty(propertyForm);
 
-        return new ResponseEntity<>("Property created successfully!", HttpStatus.CREATED);
+        // 使用 DataResponseDTO 包裝返回訊息
+        DataResponseDTO<String> response = new DataResponseDTO<>("房源新增成功！");
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }
