@@ -1,0 +1,98 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-push-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate application.properties
+        run: |
+          cat << EOF > ./rental_backend/application.properties
+          spring.application.name=rental_backend
+          spring.data.mongodb.uri=${{ secrets.MONGODB_URI }}
+          spring.datasource.url=${{ secrets.DATASOURCE_URL }}
+          spring.datasource.username=${{ secrets.DATASOURCE_USERNAME }}
+          spring.datasource.password=${{ secrets.DATASOURCE_PASSWORD }}
+          cloud.aws.region.static=ap-northeast-1
+          spring.jpa.hibernate.ddl-auto=update
+          spring.jpa.open-in-view=false
+          spring.jpa.properties.hibernate.jdbc.time_zone=Asia/Taipei
+          jwt.secret=${{ secrets.JWT_SECRET }}
+          cors.allow.origins=${{ secrets.CORS_ALLOW_ORIGINS }}
+          spring.data.redis.host=${{ secrets.REDIS_HOST }}
+          spring.data.redis.port=6379
+          spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}
+          spring.data.redis.ssl.enabled=true
+          amazon.aws.region=${{ secrets.AWS_REGION }}
+          google.api.key=${{ secrets.GOOGLE_API_KEY }}
+          google.api.geocoding.url=https://maps.googleapis.com/maps/api/geocode/json
+          EOF
+          cat ./rental_backend/application.properties
+      - name: Set up JDK 17
+        uses: actions/setup-java@v2
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Build backend Docker image
+        run: |
+          docker build -t james66689/rental_backend:latest -f ./rental_backend/Dockerfile ./rental_backend
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{secrets.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
+
+      - name: Push backend Docker image
+        run: |
+          docker push james66689/rental_backend:latest
+
+  build-and-push-frontend:
+    needs: build-and-push-backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Generate .env.production
+        run: |
+          cat << EOF > ./rental_frontend/.env.production
+          REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}
+          REACT_APP_GOOGLE_MAPS_ID=${{ secrets.REACT_APP_GOOGLE_MAPS_ID }}
+          REACT_APP_WS_ENDPOINT_PROD=${{ secrets.REACT_APP_WS_ENDPOINT_PROD }}
+          EOF
+          cat ./rental_frontend/.env.production
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: |
+          cd rental_frontend
+          npm install
+
+      - name: Build React project
+        run: |
+          cd rental_frontend
+          npm run build
+
+      - name: Upload to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: rental-sideproject
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SOURCE_DIR: ./rental_frontend/build

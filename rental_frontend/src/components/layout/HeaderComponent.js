@@ -19,7 +19,6 @@ import {
   LoginOutlined,
   MessageOutlined,
   HeartOutlined,
-  UserOutlined,
   MenuOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
@@ -63,6 +62,7 @@ const HeaderComponent = ({
 
   const handleLogoClick = () => {
     navigate("/");
+    window.location.reload();
   };
 
   const handleFavoriteClick = () => {
@@ -148,11 +148,11 @@ const HeaderComponent = ({
   };
 
   const menuItems = [
-    {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "個人資料",
-    },
+    // {
+    //   key: "profile",
+    //   icon: <UserOutlined />,
+    //   label: "個人資料",
+    // },
     {
       key: "upload",
       icon: <UploadOutlined />,
@@ -259,7 +259,10 @@ const HeaderComponent = ({
           <Form.Item
             label="電子信箱"
             name="email"
-            rules={[{ required: true, message: "請輸入電子信箱!" }]}
+            rules={[
+              { required: true, message: "請輸入電子信箱!" },
+              { type: "email", message: "請輸入有效的電子信箱！" },
+            ]}
           >
             <Input />
           </Form.Item>

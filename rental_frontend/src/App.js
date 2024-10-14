@@ -38,11 +38,8 @@ function App() {
     // 如果尚未超過最大重連次數，嘗試重連
     if (reconnectAttempts.current < maxReconnectAttempts) {
       reconnectAttempts.current += 1;
-      console.log(
-        `嘗試重新連接... (${reconnectAttempts.current}/${maxReconnectAttempts})`
-      );
 
-      // 這裡可以直接嘗試重啟 stompClient 連接
+      //嘗試重啟 stompClient 連接
       if (stompClient.current) {
         stompClient.current.deactivate(); // 先停用現有的連接
         setTimeout(() => {
@@ -85,8 +82,7 @@ function App() {
   useEffect(() => {
     if (token && currentUserId) {
       stompClient.current = new Client({
-        brokerURL: `wss://goodshiba.com/ws?token=${token}`,
-        // brokerURL: `ws://localhost:8080/ws?token=${token}`,
+        brokerURL: `${wsEndpoint}?token=${token}`,
         reconnectDelay: 5000, // 設置重新連接的延遲
         heartbeatIncoming: 20000, // 設置心跳檢查
         heartbeatOutgoing: 20000,
@@ -178,7 +174,13 @@ function App() {
     setToken(null);
     setCurrentUserId(null);
     setUnreadCounts({});
-    localStorage.removeItem("jwtToken"); // 清除 Token
+    localStorage.removeItem("jwtToken");
+
+    if (stompClient.current) {
+      stompClient.current.deactivate();
+      stompClient.current = null; // 確保 WebSocket 被清除
+    }
+
     message.success("登出成功！");
   };
 

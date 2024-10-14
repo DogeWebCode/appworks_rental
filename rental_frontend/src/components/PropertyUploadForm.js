@@ -81,7 +81,8 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
     fetch("/api/geo/city")
       .then((res) => res.json())
       .then((data) => {
-        setCities(data.data);
+        const sortedData = data.data.sort((a, b) => a.id - b.id);
+        setCities(sortedData);
       })
       .catch((err) => console.error(err));
   }, []);
@@ -147,6 +148,10 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
   const handleFinish = (values) => {
     setLoading(true);
     const formData = new FormData();
+
+    if (!values.description) {
+      values.description = "";
+    }
 
     // 主圖片處理
     if (fileList.length > 0) {
@@ -283,7 +288,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                     label="縣市"
                     rules={[{ required: true, message: "請選擇縣市" }]}
                   >
-                    <Select onChange={handleCityChange}>
+                    <Select onChange={handleCityChange} showSearch>
                       {cities.map((city) => (
                         <Option key={city.id} value={city.cityName}>
                           {city.cityName}
@@ -298,7 +303,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                     label="區域"
                     rules={[{ required: true, message: "請選擇區域" }]}
                   >
-                    <Select onChange={handleDistrictChange}>
+                    <Select onChange={handleDistrictChange} showSearch>
                       {districts.map((district) => (
                         <Option key={district.id} value={district.districtName}>
                           {district.districtName}
@@ -313,7 +318,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                     label="道路"
                     rules={[{ required: true, message: "請選擇道路" }]}
                   >
-                    <Select>
+                    <Select showSearch>
                       {roads.map((road) => (
                         <Option key={road.id} value={road.roadName}>
                           {road.roadName}
@@ -327,7 +332,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
               <Form.Item
                 name="address"
                 label="地址"
-                rules={[{ required: true, message: "請輸入詳細地址" }]}
+                rules={[{ required: false, message: "請輸入詳細地址" }]}
               >
                 <Input />
               </Form.Item>

@@ -401,10 +401,11 @@ const ChatRoom = ({
                 groupMessagesByDate(
                   messages.filter(
                     (msg) =>
-                      (msg.senderId === targetUserId &&
+                      !msg.isSystemMessage && // 過濾掉系統訊息
+                      ((msg.senderId === targetUserId &&
                         msg.receiverId === currentUserId) ||
-                      (msg.senderId === currentUserId &&
-                        msg.receiverId === targetUserId)
+                        (msg.senderId === currentUserId &&
+                          msg.receiverId === targetUserId))
                   )
                 )
               ).map(([date, msgs]) => (
@@ -441,7 +442,10 @@ const ChatRoom = ({
                           color="textSecondary"
                           sx={{ mt: 0.5 }}
                         >
-                          {new Date(msg.timestamp).toLocaleTimeString()}
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </Typography>
                       </Box>
                     </ListItem>

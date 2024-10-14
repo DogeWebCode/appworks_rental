@@ -9,6 +9,7 @@ import tw.school.rental_backend.service.ChatService;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -24,15 +25,20 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void saveMessage(ChatMessage chatMessage) {
         chatMessage.setTimestamp(LocalDateTime.now());
-        chatMessageRepository.save(chatMessage);
 
+        chatMessageRepository.save(chatMessage);
         redisMessagePublisher.publish(chatMessage);
     }
 
     @Override
     public List<ChatMessage> findChatMessages(String currentUserId, String partnerId) {
-        return chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(
+        List<ChatMessage> messages = chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(
                 currentUserId, partnerId);
+
+        // 過濾掉系統訊息
+        return messages.stream()
+                .filter(message -> !message.isSystemMessage()) // 只保留非系統訊息
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -52,11 +58,6 @@ public class ChatServiceImpl implements ChatService {
             }
         }
         return new ArrayList<>(chatPartners); // 返回不包含當前使用者的聊天對象
-    }
-
-    @Override
-    public List<ChatMessage> findUnreadChatMessages(String currentUserId) {
-        return chatMessageRepository.findUnreadMessagesByReceiverId(currentUserId);
     }
 
     @Override
@@ -85,4 +86,19 @@ public class ChatServiceImpl implements ChatService {
         }
         return unreadCounts;
     }
+
+    @Override
+    public void startChat(String senderId, String receiverId) {
+        List<ChatMessage> existingMessages = chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(senderId, receiverId);
+        if (existingMessages.isEmpty()) {
+            ChatMessage systemMessage = new ChatMessage();
+            systemMessage.setSenderId(senderId);
+            systemMessage.setReceiverId(receiverId);
+            systemMessage.setContent("");
+            systemMessage.setSystemMessage(true);
+            systemMessage.setTimestamp(LocalDateTime.now());
+            chatMessageRepository.save(systemMessage);
+        }
+    }
+
 }

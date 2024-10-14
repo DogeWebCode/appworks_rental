@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import tw.school.rental_backend.model.RecommendedProperty;
 
 public interface RecommendedPropertyRepository extends JpaRepository<RecommendedProperty, Long> {
+
     Page<RecommendedProperty> findByUserIdOrderByScoreDesc(Long userId, Pageable pageable);
 }

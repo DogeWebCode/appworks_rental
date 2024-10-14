@@ -662,9 +662,28 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
   const handleContactLandlord = () => {
     if (token) {
-      showChat(property.landlord_info.landlord_username); // 有登入，跳聊天室
+      fetch("/api/chat/startChat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiverId: property.landlord_info.landlord_username,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to start chat");
+          }
+          showChat(property.landlord_info.landlord_username);
+        })
+        .catch((error) => {
+          console.error("Error starting chat:", error);
+          message.error("無法啟動聊天");
+        });
     } else {
-      setIsLoginModalVisible(true); // 沒登入，跳登入表單
+      setIsLoginModalVisible(true);
     }
   };
 
@@ -692,7 +711,6 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
       }
 
       setIsFavorite(!isFavorite); // 切換收藏狀態
-      message.success(isFavorite ? "已取消收藏" : "成功加入收藏");
 
       // 記錄或移除 "favorite" 操作
       if (!isFavorite) {
@@ -722,7 +740,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
   const formatDescription = (description) => {
     if (!description) {
-      return [];
+      return ["此房源目前沒有提供描述"];
     }
 
     // 將文字按照句號或問號分割

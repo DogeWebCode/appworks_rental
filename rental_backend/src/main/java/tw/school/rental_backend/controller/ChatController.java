@@ -78,6 +78,19 @@ public class ChatController {
         }
     }
 
+    @PostMapping("/startChat")
+    public ResponseEntity<?> startChat(@RequestBody Map<String, String> requestBody, Authentication authentication) {
+        try {
+            String senderId = authentication.getName();
+            String receiverId = requestBody.get("receiverId");
+            chatService.startChat(senderId, receiverId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Failed to start chat.", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("啟動聊天失敗"));
+        }
+    }
+
 
     @PostMapping("/messages/read")
     public ResponseEntity<?> markMessagesAsRead(@RequestBody Map<String, String> requestBody, Authentication authentication) {
