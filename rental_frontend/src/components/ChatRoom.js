@@ -350,9 +350,10 @@ const ChatRoom = ({
         <Box
           sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}
         >
-          <Typography>正在連接聊天服務，可重新登入修正。</Typography>
+          <Typography>正在連接聊天服務。</Typography>
         </Box>
       )}
+
       <ChatContainer>
         <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
           {userList.map((user) => (
@@ -383,16 +384,26 @@ const ChatRoom = ({
 
         <ChatArea>
           <ChatHeader>
-            <Avatar sx={{ mr: 2 }}>
-              {targetUserName && targetUserName.length > 0
-                ? targetUserName[0].toUpperCase()
-                : propTargetUserId && propTargetUserId.length > 0
-                ? propTargetUserId[0].toUpperCase()
-                : "?"}
-            </Avatar>
-            <Typography variant="h6" align="center">
-              {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
-            </Typography>
+            {targetUserId ? (
+              // 當有選擇用戶時顯示頭像和名稱
+              <>
+                <Avatar sx={{ mr: 2 }}>
+                  {targetUserName && targetUserName.length > 0
+                    ? targetUserName[0].toUpperCase()
+                    : propTargetUserId && propTargetUserId.length > 0
+                    ? propTargetUserId[0].toUpperCase()
+                    : "?"}
+                </Avatar>
+                <Typography variant="h6" align="center">
+                  {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
+                </Typography>
+              </>
+            ) : (
+              // 當未選擇用戶時顯示提示訊息
+              <Typography variant="h6" sx={{ width: "100%" }}>
+                請選擇用戶開始聊天
+              </Typography>
+            )}
           </ChatHeader>
           <Divider />
           <MessageList ref={messageListRef}>
