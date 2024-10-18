@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Layout,
   Button,
@@ -40,6 +40,20 @@ const HeaderComponent = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [isRegisterModalVisible, setIsRegisterModalVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 570);
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize(); // 初始化檢查
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const handleLoginClick = () => {
     setIsLoginModalVisible(true); // 顯示登入表單
@@ -148,15 +162,26 @@ const HeaderComponent = ({
   };
 
   const menuItems = [
-    // {
-    //   key: "profile",
-    //   icon: <UserOutlined />,
-    //   label: "個人資料",
-    // },
+    ...(isMobile
+      ? [
+          {
+            key: "favorite",
+            icon: <HeartOutlined />,
+            label: "收藏夾",
+            onClick: handleFavoriteClick,
+          },
+          {
+            key: "chat",
+            icon: <MessageOutlined />,
+            label: "聊天室",
+            onClick: handleChatClick,
+          },
+        ]
+      : []),
     {
       key: "upload",
       icon: <UploadOutlined />,
-      label: <Link to="/upload-property">上傳房源</Link>,
+      label: <Link to="/upload-property">上架房源</Link>,
     },
     ...(token
       ? [
@@ -220,18 +245,30 @@ const HeaderComponent = ({
             {token ? (
               <>
                 <span style={{ marginRight: 2 }}>您好，{currentUserId}</span>
-                <Button icon={<HeartOutlined />} onClick={handleFavoriteClick}>
-                  收藏夾
-                </Button>
-                <Button icon={<MessageOutlined />} onClick={handleChatClick}>
-                  聊天室
-                  <Badge
-                    count={totalUnreadCount}
-                    offset={[5, -5]}
-                    size="small"
-                  />
-                </Button>
 
+                {!isMobile && (
+                  <>
+                    <Button
+                      icon={<HeartOutlined />}
+                      onClick={handleFavoriteClick}
+                    >
+                      收藏夾
+                    </Button>
+                    <Button
+                      icon={<MessageOutlined />}
+                      onClick={handleChatClick}
+                    >
+                      聊天室
+                      <Badge
+                        count={totalUnreadCount}
+                        offset={[5, -5]}
+                        size="small"
+                      />
+                    </Button>
+                  </>
+                )}
+
+                {/* 在手機上將按鈕移到 Dropdown */}
                 <Dropdown menu={{ items: menuItems }} placement="bottomRight">
                   <Button icon={<MenuOutlined />}>選單</Button>
                 </Dropdown>

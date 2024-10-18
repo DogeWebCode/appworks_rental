@@ -23,8 +23,8 @@ public class DynamoDBConfig {
     @Bean
     public DynamoDbClient dynamoDbClient() {
         return DynamoDbClient.builder()
-                .region(Region.of(amazonAWSRegion))  // 使用 AWS 雲端的區域
-                .credentialsProvider(InstanceProfileCredentialsProvider.create())  // AWS IAM 權限
+                .region(Region.of(amazonAWSRegion))
+                .credentialsProvider(InstanceProfileCredentialsProvider.create())
                 .build();
     }
 }

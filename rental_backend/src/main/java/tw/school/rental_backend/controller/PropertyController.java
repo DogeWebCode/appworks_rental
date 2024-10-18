@@ -58,7 +58,6 @@ public class PropertyController {
                 Sort.Direction direction = Sort.Direction.fromString(sortDirection);
                 sort = Sort.by(direction, sortBy);
             } else {
-                // 使用默認排序
                 sort = Sort.by(Sort.Direction.DESC, "createdAt");
             }
 
@@ -114,26 +113,21 @@ public class PropertyController {
         return ResponseEntity.ok(propertyDetail);
     }
 
-    @PostMapping(path = "/create", consumes = {"multipart/form-data"})
+    @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<DataResponseDTO<String>> createProperty(@ModelAttribute PropertyForm propertyForm, Authentication authentication) {
 
         log.info("開始創建房源");
-        log.info("主圖片: {}", propertyForm.getMainImage()); // 這裡可以檢查是否接收到主圖片
+        log.info("主圖片: {}", propertyForm.getMainImage());
         log.info("其他圖片: {}", propertyForm.getImages());
 
-        // 獲取當前使用者
         String username = authentication.getName();
 
-        // 通過使用者名稱獲取使用者對象
         User user = userService.findByUsername(username);
 
-        // 設置 userId 到 PropertyForm 中
         propertyForm.setUserId(user.getId());
 
-        // 創建房源
         propertyService.createProperty(propertyForm);
 
-        // 使用 DataResponseDTO 包裝返回訊息
         DataResponseDTO<String> response = new DataResponseDTO<>("房源新增成功！");
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);

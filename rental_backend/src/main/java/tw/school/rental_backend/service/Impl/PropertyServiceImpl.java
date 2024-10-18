@@ -157,7 +157,7 @@ public class PropertyServiceImpl implements PropertyService {
             Optional<LatLngDTO> latLng = geocodingService.getLatLng(fullAddress);
 
             if (latLng.isPresent()) {
-                // 如果有經緯度值
+                // 如果有經緯度
                 property.setLatitude(BigDecimal.valueOf(latLng.get().getLat()));
                 property.setLongitude(BigDecimal.valueOf(latLng.get().getLng()));
             } else {

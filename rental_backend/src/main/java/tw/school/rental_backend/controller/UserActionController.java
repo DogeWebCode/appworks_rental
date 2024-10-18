@@ -48,17 +48,4 @@ public class UserActionController {
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
-
-    @DeleteMapping("/{propertyId}")
-    public ResponseEntity<?> removeFavoriteAction(@PathVariable("propertyId") Long propertyId, Authentication authentication) {
-        String username = authentication.getName();
-        User user = userService.findByUsername(username);
-
-        userActionService.removeFavoriteAction(user.getId(), propertyId);
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "刪除使用者收藏紀錄成功");
-
-        return ResponseEntity.ok(response);
-    }
 }

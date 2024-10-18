@@ -39,8 +39,6 @@ public class GeocodingServiceImpl implements GeocodingService {
         // 發送請求
         ResponseEntity<GeocodingResponseDTO> response = restTemplate.getForEntity(url, GeocodingResponseDTO.class);
 
-        log.info("完整的API響應 JSON: {}", Objects.requireNonNull(response.getBody()).toString());
-
         // 檢查 API 回應
         if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
             GeocodingResponseDTO geocodingResponseDTO = response.getBody();
@@ -59,7 +57,6 @@ public class GeocodingServiceImpl implements GeocodingService {
             log.error("Response body: {}", response.getBody());
         }
 
-        // 如果無法取得結果，返回空
         return Optional.empty();
     }
 

@@ -26,8 +26,8 @@ public class FavoriteController {
 
     @PostMapping("/{propertyId}")
     public ResponseEntity<?> addFavorite(HttpServletRequest request, @PathVariable Long propertyId, Authentication authentication) {
-        String token = jwtTokenProvider.resolveToken(request);  // 從請求中提取 JWT Token
-        Long userId = jwtTokenProvider.getUserId(token);  // 從 Token 中提取 userId
+        String token = jwtTokenProvider.resolveToken(request);
+        Long userId = jwtTokenProvider.getUserId(token);
         favoriteService.addFavorite(userId, propertyId);
         return ResponseEntity.ok().build();
     }

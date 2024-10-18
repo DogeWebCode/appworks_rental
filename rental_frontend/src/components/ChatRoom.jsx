@@ -47,21 +47,36 @@ const MessageDateSeparator = ({ date }) => (
 // ---------------------------- 聊天室樣式 -------------------------------------
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  height: "55vh",
-  maxWidth: "800px",
-  margin: "auto", // 居中
+  height: "55vh", // 保持55%高度，讓其他內容還能顯示
+  maxHeight: "80vh", // 限制最大高度，防止在小螢幕上遮住整個畫面
+  width: "100%", // 使用100%寬度
+  maxWidth: "800px", // 桌面版最大寬度設置
+  margin: "auto", // 居中顯示
   display: "flex",
   flexDirection: "column",
   borderRadius: theme.shape.borderRadius,
   overflow: "hidden",
   boxShadow: theme.shadows[3],
+  [theme.breakpoints.down("sm")]: {
+    height: "45vh",
+    maxHeight: "50vh",
+  },
 }));
 
-const ChatContainer = styled(Box)({
+const ChatContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   flex: 1,
   overflow: "hidden",
-});
+  [theme.breakpoints.down("sm")]: {
+    width: "90vw",
+    height: "45vh",
+    position: "fixed",
+    bottom: 0,
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 1000,
+  },
+}));
 
 const ChatHeader = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 2),
@@ -76,6 +91,9 @@ const UserList = styled(List)(({ theme }) => ({
   maxWidth: "200px",
   borderRight: `1px solid ${theme.palette.divider}`,
   overflowY: "auto",
+  [theme.breakpoints.down("sm")]: {
+    width: "35vw",
+  },
 }));
 
 const ChatArea = styled(Box)({

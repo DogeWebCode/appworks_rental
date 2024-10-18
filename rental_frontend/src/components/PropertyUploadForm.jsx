@@ -238,7 +238,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
 
   useEffect(() => {
     return () => {
-      // 清理 URL 對象
+      // 清理 URL
       if (mainImageUrl) {
         URL.revokeObjectURL(mainImageUrl);
       }
@@ -262,7 +262,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
       <Spin spinning={loading}>
         <Row gutter={32}>
           <Col span={14}>
-            <Title level={2}>上傳房源</Title>
+            <Title level={2}>上架房源</Title>
             <Form
               form={form}
               layout="vertical"
@@ -341,8 +341,8 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                 <Col span={12}>
                   <Form.Item
                     name="price"
-                    label="價格 (每月)"
-                    rules={[{ required: true, message: "請輸入價格" }]}
+                    label="租金 (每月)"
+                    rules={[{ required: true, message: "請輸入租金" }]}
                   >
                     <InputNumber
                       style={{ width: "100%" }}
@@ -355,7 +355,11 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="deposit" label="押金">
+                  <Form.Item
+                    name="deposit"
+                    label="押金"
+                    rules={[{ required: true, message: "請輸入押金" }]}
+                  >
                     <InputNumber
                       style={{ width: "100%" }}
                       min={0}
@@ -451,7 +455,11 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                 </Upload>
               </Form.Item>
 
-              <Form.Item name="images" label="房源圖片">
+              <Form.Item
+                name="images"
+                label="房源圖片"
+                rules={[{ required: true, message: "請上傳至少一張房源圖片" }]}
+              >
                 <Upload
                   beforeUpload={() => false}
                   listType="picture-card"
@@ -468,7 +476,11 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                 <Input.TextArea rows={4} />
               </Form.Item>
 
-              <Form.Item name="managementFee" label="管理費">
+              <Form.Item
+                name="managementFee"
+                label="管理費"
+                rules={[{ required: true, message: "請輸入管理費" }]}
+              >
                 <InputNumber
                   style={{ width: "100%" }}
                   min={0}
@@ -479,7 +491,11 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
                 />
               </Form.Item>
 
-              <Form.Item name="rentPeriod" label="租期">
+              <Form.Item
+                name="rentPeriod"
+                label="最短租期"
+                rules={[{ required: true, message: "請輸入最短租期" }]}
+              >
                 <Input />
               </Form.Item>
 
@@ -517,29 +533,49 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
 
               <Row gutter={16}>
                 <Col span={8}>
-                  <Form.Item name="roomCount" label="房間數">
+                  <Form.Item
+                    name="roomCount"
+                    label="房間數"
+                    rules={[{ required: true, message: "請輸入房間數量" }]}
+                  >
                     <InputNumber style={{ width: "100%" }} min={0} />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="livingRoomCount" label="客廳數">
+                  <Form.Item
+                    name="livingRoomCount"
+                    label="客廳數"
+                    rules={[{ required: true, message: "請輸入客廳數量" }]}
+                  >
                     <InputNumber style={{ width: "100%" }} min={0} />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="bathroomCount" label="衛浴數">
+                  <Form.Item
+                    name="bathroomCount"
+                    label="衛浴數"
+                    rules={[{ required: true, message: "請輸入衛浴數量" }]}
+                  >
                     <InputNumber style={{ width: "100%" }} min={0} />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
                 <Col span={12}>
-                  <Form.Item name="balconyCount" label="陽台數">
+                  <Form.Item
+                    name="balconyCount"
+                    label="陽台數"
+                    rules={[{ required: true, message: "請輸入陽台數量" }]}
+                  >
                     <InputNumber style={{ width: "100%" }} min={0} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
-                  <Form.Item name="kitchenCount" label="廚房數">
+                  <Form.Item
+                    name="kitchenCount"
+                    label="廚房數"
+                    rules={[{ required: true, message: "請輸入廚房數量" }]}
+                  >
                     <InputNumber style={{ width: "100%" }} min={0} />
                   </Form.Item>
                 </Col>
