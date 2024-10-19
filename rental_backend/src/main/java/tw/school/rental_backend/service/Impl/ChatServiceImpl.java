@@ -57,7 +57,7 @@ public class ChatServiceImpl implements ChatService {
                 chatPartners.add(message.getReceiverId());
             }
         }
-        return new ArrayList<>(chatPartners); // 返回不包含當前使用者的聊天對象
+        return new ArrayList<>(chatPartners);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ChatServiceImpl implements ChatService {
             chatMessage.setRead(true);
         }
 
-        // 批量保存已讀訊息
+        // 保存已讀訊息
         if (!chatMessages.isEmpty()) {
             chatMessageRepository.saveAll(chatMessages);
         }
