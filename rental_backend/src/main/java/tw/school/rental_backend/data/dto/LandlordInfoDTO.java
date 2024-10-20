@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LandlordInfoDTO {
+    
     @JsonProperty("landlord_id")
     private Long id;
     @JsonProperty("landlord_username")

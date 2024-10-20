@@ -1,7 +1,7 @@
 package tw.school.rental_backend.service.Impl;
 
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import tw.school.rental_backend.message.RedisMessagePublisher;
 import tw.school.rental_backend.model.chat.ChatMessage;
 import tw.school.rental_backend.repository.mongo.chat.ChatMessageRepository;
 
@@ -9,32 +9,36 @@ import tw.school.rental_backend.service.ChatService;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatServiceImpl implements ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final RedisMessagePublisher redisMessagePublisher;
 
-    public ChatServiceImpl(ChatMessageRepository chatMessageRepository, SimpMessagingTemplate messagingTemplate) {
+    public ChatServiceImpl(ChatMessageRepository chatMessageRepository, RedisMessagePublisher redisMessagePublisher) {
         this.chatMessageRepository = chatMessageRepository;
-        this.messagingTemplate = messagingTemplate;
+        this.redisMessagePublisher = redisMessagePublisher;
     }
 
     @Override
     public void saveMessage(ChatMessage chatMessage) {
         chatMessage.setTimestamp(LocalDateTime.now());
-        chatMessageRepository.save(chatMessage);
 
-        // 保存後獲取最新的聊天對象並推送給所有人
-        List<String> updatedChatPartners = this.findChatPartners(chatMessage.getSenderId());
-        messagingTemplate.convertAndSend("/topic/chat/partners", updatedChatPartners);
+        chatMessageRepository.save(chatMessage);
+        redisMessagePublisher.publish(chatMessage);
     }
 
     @Override
     public List<ChatMessage> findChatMessages(String currentUserId, String partnerId) {
-        return chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(
+        List<ChatMessage> messages = chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(
                 currentUserId, partnerId);
+
+        // 過濾掉系統訊息
+        return messages.stream()
+                .filter(message -> !message.isSystemMessage()) // 只保留非系統訊息
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -53,12 +57,7 @@ public class ChatServiceImpl implements ChatService {
                 chatPartners.add(message.getReceiverId());
             }
         }
-        return new ArrayList<>(chatPartners); // 返回不包含當前使用者的聊天對象
-    }
-
-    @Override
-    public List<ChatMessage> findUnreadChatMessages(String currentUserId) {
-        return chatMessageRepository.findUnreadMessagesByReceiverId(currentUserId);
+        return new ArrayList<>(chatPartners);
     }
 
     @Override
@@ -71,7 +70,7 @@ public class ChatServiceImpl implements ChatService {
             chatMessage.setRead(true);
         }
 
-        // 批量保存已讀訊息
+        // 保存已讀訊息
         if (!chatMessages.isEmpty()) {
             chatMessageRepository.saveAll(chatMessages);
         }
@@ -87,4 +86,19 @@ public class ChatServiceImpl implements ChatService {
         }
         return unreadCounts;
     }
+
+    @Override
+    public void startChat(String senderId, String receiverId) {
+        List<ChatMessage> existingMessages = chatMessageRepository.findBySenderIdAndReceiverIdOrReceiverIdAndSenderIdOrderByTimestampAsc(senderId, receiverId);
+        if (existingMessages.isEmpty()) {
+            ChatMessage systemMessage = new ChatMessage();
+            systemMessage.setSenderId(senderId);
+            systemMessage.setReceiverId(receiverId);
+            systemMessage.setContent("");
+            systemMessage.setSystemMessage(true);
+            systemMessage.setTimestamp(LocalDateTime.now());
+            chatMessageRepository.save(systemMessage);
+        }
+    }
+
 }

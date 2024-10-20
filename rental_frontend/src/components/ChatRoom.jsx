@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { message } from "antd";
 import {
   Box,
   Paper,
@@ -46,21 +47,36 @@ const MessageDateSeparator = ({ date }) => (
 // ---------------------------- 聊天室樣式 -------------------------------------
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  height: "55vh",
-  maxWidth: "800px",
-  margin: "auto", // 居中
+  height: "55vh", // 保持55%高度，讓其他內容還能顯示
+  maxHeight: "80vh", // 限制最大高度，防止在小螢幕上遮住整個畫面
+  width: "100%", // 使用100%寬度
+  maxWidth: "800px", // 桌面版最大寬度設置
+  margin: "auto", // 居中顯示
   display: "flex",
   flexDirection: "column",
   borderRadius: theme.shape.borderRadius,
   overflow: "hidden",
   boxShadow: theme.shadows[3],
+  [theme.breakpoints.down("sm")]: {
+    height: "45vh",
+    maxHeight: "50vh",
+  },
 }));
 
-const ChatContainer = styled(Box)({
+const ChatContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   flex: 1,
   overflow: "hidden",
-});
+  [theme.breakpoints.down("sm")]: {
+    width: "90vw",
+    height: "45vh",
+    position: "fixed",
+    bottom: 0,
+    left: "50%",
+    transform: "translateX(-50%)",
+    zIndex: 1000,
+  },
+}));
 
 const ChatHeader = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 2),
@@ -75,6 +91,9 @@ const UserList = styled(List)(({ theme }) => ({
   maxWidth: "200px",
   borderRight: `1px solid ${theme.palette.divider}`,
   overflowY: "auto",
+  [theme.breakpoints.down("sm")]: {
+    width: "35vw",
+  },
 }));
 
 const ChatArea = styled(Box)({
@@ -132,6 +151,7 @@ const ChatRoom = ({
   setUnreadCounts,
   stompClient,
   setChatTargetUser,
+  wsConnected,
 }) => {
   const [inputMessage, setInputMessage] = useState(""); // 輸入的訊息
   const [targetUserId, setTargetUserId] = useState(null); // 目標用戶 ID
@@ -174,41 +194,47 @@ const ChatRoom = ({
   }, []);
 
   useEffect(() => {
-    if (stompClient) {
+    if (stompClient && wsConnected) {
       const subscription = stompClient.subscribe(
         "/user/queue/message",
         (message) => {
           const newMessage = JSON.parse(message.body);
           const { senderId, receiverId } = newMessage;
 
-          // 判斷是否是正在聊天的對象
-          const isCurrentChatPartner =
-            senderId === targetUserId || receiverId === targetUserId;
+          // 確保這不是自己本地已經發送的訊息
+          if (!newMessage.isLocal) {
+            const isCurrentChatPartner =
+              senderId === targetUserId || receiverId === targetUserId;
 
-          if (isCurrentChatPartner) {
-            // 如果是正在聊天的對象，將訊息標記為已讀並更新狀態
-            // 標記訊息為已讀
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
+            if (isCurrentChatPartner) {
+              // 更新訊息到畫面
+              setMessages((prevMessages) => [...prevMessages, newMessage]);
 
-            fetch("/api/chat/messages/read", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({ partnerId: targetUserId }),
-            }).catch((error) =>
-              console.error("Error marking messages as read:", error)
-            );
+              // 標記消息為已讀
+              fetch("/api/chat/messages/read", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ partnerId: targetUserId }),
+              }).catch((error) =>
+                console.error("Error marking messages as read:", error)
+              );
+            }
           }
         }
       );
 
       return () => {
-        subscription.unsubscribe();
+        if (subscription) {
+          subscription.unsubscribe();
+        }
       };
+    } else {
+      message.warning("尚未連線至聊天室");
     }
-  }, [stompClient, targetUserId, setUnreadCounts, token]);
+  }, [stompClient, targetUserId, setUnreadCounts, token, wsConnected]);
 
   useEffect(() => {
     if (targetUserId) {
@@ -257,6 +283,7 @@ const ChatRoom = ({
         receiverId: targetUserId,
         timestamp: new Date().toISOString(),
         read: false,
+        isLocal: true,
       };
 
       // 更新訊息
@@ -266,7 +293,10 @@ const ChatRoom = ({
       if (stompClient && stompClient.connected) {
         stompClient.publish({
           destination: "/app/message",
-          body: JSON.stringify(chatMessage),
+          body: JSON.stringify({
+            ...chatMessage,
+            isLocal: false, // 發送到服務器時移除本地標記
+          }),
           headers: {},
         });
       } else {
@@ -334,6 +364,14 @@ const ChatRoom = ({
 
   return (
     <StyledPaper elevation={0}>
+      {!wsConnected && (
+        <Box
+          sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}
+        >
+          <Typography>正在連接聊天服務。</Typography>
+        </Box>
+      )}
+
       <ChatContainer>
         <UserList subheader={<ListSubheader>聊天記錄</ListSubheader>}>
           {userList.map((user) => (
@@ -364,16 +402,26 @@ const ChatRoom = ({
 
         <ChatArea>
           <ChatHeader>
-            <Avatar sx={{ mr: 2 }}>
-              {targetUserName && targetUserName.length > 0
-                ? targetUserName[0].toUpperCase()
-                : propTargetUserId && propTargetUserId.length > 0
-                ? propTargetUserId[0].toUpperCase()
-                : "?"}
-            </Avatar>
-            <Typography variant="h6" align="center">
-              {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
-            </Typography>
+            {targetUserId ? (
+              // 當有選擇用戶時顯示頭像和名稱
+              <>
+                <Avatar sx={{ mr: 2 }}>
+                  {targetUserName && targetUserName.length > 0
+                    ? targetUserName[0].toUpperCase()
+                    : propTargetUserId && propTargetUserId.length > 0
+                    ? propTargetUserId[0].toUpperCase()
+                    : "?"}
+                </Avatar>
+                <Typography variant="h6" align="center">
+                  {targetUserName ? `${targetUserName}` : `${propTargetUserId}`}
+                </Typography>
+              </>
+            ) : (
+              // 當未選擇用戶時顯示提示訊息
+              <Typography variant="h6" sx={{ width: "100%" }}>
+                請選擇用戶開始聊天
+              </Typography>
+            )}
           </ChatHeader>
           <Divider />
           <MessageList ref={messageListRef}>
@@ -382,10 +430,11 @@ const ChatRoom = ({
                 groupMessagesByDate(
                   messages.filter(
                     (msg) =>
-                      (msg.senderId === targetUserId &&
+                      !msg.isSystemMessage && // 過濾掉系統訊息
+                      ((msg.senderId === targetUserId &&
                         msg.receiverId === currentUserId) ||
-                      (msg.senderId === currentUserId &&
-                        msg.receiverId === targetUserId)
+                        (msg.senderId === currentUserId &&
+                          msg.receiverId === targetUserId))
                   )
                 )
               ).map(([date, msgs]) => (
@@ -393,7 +442,7 @@ const ChatRoom = ({
                   <MessageDateSeparator date={date} />
                   {msgs.map((msg, index) => (
                     <ListItem
-                      key={msg.id || index}
+                      key={msg.id || msg.timestamp || index}
                       sx={{
                         justifyContent:
                           msg.senderId === currentUserId
@@ -422,7 +471,10 @@ const ChatRoom = ({
                           color="textSecondary"
                           sx={{ mt: 0.5 }}
                         >
-                          {new Date(msg.timestamp).toLocaleTimeString()}
+                          {new Date(msg.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </Typography>
                       </Box>
                     </ListItem>

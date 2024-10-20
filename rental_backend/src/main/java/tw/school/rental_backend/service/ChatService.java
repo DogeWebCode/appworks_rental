@@ -13,9 +13,10 @@ public interface ChatService {
 
     List<String> findChatPartners(String currentUserId);
 
-    List<ChatMessage> findUnreadChatMessages(String currentUserId);
-
     void markMessagesAsRead(String currentUserId,String partnerId);
 
     Map<String, Integer> findUnreadMessageCount(String currentUserId);
+
+    void startChat(String senderId, String receiverId);
+
 }

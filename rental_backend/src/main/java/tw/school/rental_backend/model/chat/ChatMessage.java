@@ -15,8 +15,10 @@ public class ChatMessage {
     private String senderId;
     private String receiverId;
     private String message;
+    private String content;
     private LocalDateTime timestamp;
     private boolean isRead;
+    private boolean isSystemMessage;
 
     public boolean isRead() {
         return isRead;
@@ -24,5 +26,13 @@ public class ChatMessage {
 
     public void setRead(boolean read) {
         isRead = read;
+    }
+
+    public boolean isSystemMessage() {
+        return isSystemMessage;
+    }
+
+    public void setSystemMessage(boolean systemMessage) {
+        isSystemMessage = systemMessage;
     }
 }

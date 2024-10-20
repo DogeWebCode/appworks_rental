@@ -1,4 +1,4 @@
-package tw.school.rental_backend.error;
+package tw.school.rental_backend.exception;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

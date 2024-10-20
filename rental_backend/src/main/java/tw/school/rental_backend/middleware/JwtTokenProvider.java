@@ -21,8 +21,6 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    private final long validityInMilliseconds = 3600000; // 1小時
-
     private final UserDetailsServiceImpl userDetailsService;
 
     public JwtTokenProvider(UserDetailsServiceImpl userDetailsService) {
@@ -38,6 +36,8 @@ public class JwtTokenProvider {
     // 生成 JWT Token
     public String createToken(Long userId, String username, String role) {
         Date now = new Date();
+        // 1小時
+        long validityInMilliseconds = 3600000;
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
         return Jwts.builder()

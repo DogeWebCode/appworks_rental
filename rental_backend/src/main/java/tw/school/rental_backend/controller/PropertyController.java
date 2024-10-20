@@ -1,26 +1,17 @@
 package tw.school.rental_backend.controller;
 
 import lombok.extern.log4j.Log4j2;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import tw.school.rental_backend.data.dto.PropertyDTO;
-import tw.school.rental_backend.data.dto.PropertyDetailDTO;
-import tw.school.rental_backend.data.dto.PropertyResponseDTO;
+import tw.school.rental_backend.data.dto.*;
 import tw.school.rental_backend.data.dto.form.PropertyForm;
-import tw.school.rental_backend.error.ErrorResponse;
 import tw.school.rental_backend.model.user.User;
 import tw.school.rental_backend.service.PropertyService;
 import tw.school.rental_backend.service.RecommendationService;
-import tw.school.rental_backend.service.UserService;
+import tw.school.rental_backend.util.UserUtil;
 
 import java.util.List;
 
@@ -31,13 +22,12 @@ public class PropertyController {
 
     private final RecommendationService recommendationService;
     private final PropertyService propertyService;
-    private final UserService userService;
+    private final UserUtil userUtil;
 
-
-    public PropertyController(RecommendationService recommendationService, UserService userService, PropertyService propertyService) {
+    public PropertyController(PropertyService propertyService, RecommendationService recommendationService, UserUtil userUtil) {
         this.recommendationService = recommendationService;
-        this.userService = userService;
         this.propertyService = propertyService;
+        this.userUtil = userUtil;
     }
 
     @GetMapping("/search")
@@ -53,58 +43,35 @@ public class PropertyController {
             @RequestParam(required = false, defaultValue = "desc") String sortDirection,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC, size = 12) Pageable pageable) {
 
-        try {
-            Sort sort;
-            if (sortBy != null && !sortBy.isEmpty()) {
-                Sort.Direction direction = Sort.Direction.fromString(sortDirection);
-                sort = Sort.by(direction, sortBy);
-            } else {
-                // 使用默認排序
-                sort = Sort.by(Sort.Direction.DESC, "createdAt");
-            }
+        Sort sort = (sortBy != null && !sortBy.isEmpty())
+                ? Sort.by(Sort.Direction.fromString(sortDirection), sortBy)
+                : Sort.by(Sort.Direction.DESC, "createdAt");
 
-            Pageable pageableWithSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        Pageable pageableWithSort = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
-            Page<PropertyDTO> propertyPage = propertyService.filterProperties(
-                    city, district, road, minPrice, maxPrice, feature, facility, pageableWithSort);
+        Page<PropertyDTO> propertyPage = propertyService.filterProperties(
+                city, district, road, minPrice, maxPrice, feature, facility, pageableWithSort);
 
-            // 拿資料
-            List<PropertyDTO> propertyDTOs = propertyPage.getContent();
+        List<PropertyDTO> propertyDTOs = propertyPage.getContent();
+        Integer nextPage = propertyPage.hasNext() ? propertyPage.getNumber() + 1 : null;
+        long totalElements = propertyPage.getTotalElements();
+        int totalPages = propertyPage.getTotalPages();
 
-            // 判斷是否有下一頁
-            Integer nextPage = propertyPage.hasNext() ? propertyPage.getNumber() + 1 : null;
-
-            // 設置總頁數和總共有多少筆資料
-            long totalElements = propertyPage.getTotalElements();
-            int totalPages = propertyPage.getTotalPages();
-
-            PropertyResponseDTO<List<PropertyDTO>> response = new PropertyResponseDTO<>(propertyDTOs);
-            response.setTotalElements(totalElements);
-            response.setTotalPages(totalPages);
-
-            if (nextPage != null) {
-                response.setNextPage(nextPage.toString());
-            }
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("篩選功能發生錯誤：{}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("篩選失敗"));
+        PropertyResponseDTO<List<PropertyDTO>> response = new PropertyResponseDTO<>(propertyDTOs);
+        response.setTotalElements(totalElements);
+        response.setTotalPages(totalPages);
+        if (nextPage != null) {
+            response.setNextPage(nextPage.toString());
         }
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/recommendation")
-    public ResponseEntity<?> getRecommendation(Authentication authentication, @PageableDefault(sort = "createdAt", size = 12) Pageable pageable) {
-        try {
-            String username = authentication.getName();
-            User user = userService.findByUsername(username);
-
-            PropertyResponseDTO<List<PropertyDTO>> recommendProperty = recommendationService.recommendPropertyForUser(user.getId(), pageable);
-            return ResponseEntity.ok(recommendProperty);
-        } catch (RuntimeException e) {
-            log.error("推薦系統發生錯誤：{}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("推薦失敗"));
-        }
+    public ResponseEntity<?> getRecommendation(@PageableDefault(sort = "score", size = 12) Pageable pageable) {
+        User user = userUtil.getCurrentUser();
+        PropertyResponseDTO<List<PropertyDTO>> recommendProperty = recommendationService.recommendPropertyForUser(user.getId(), pageable);
+        return ResponseEntity.ok(recommendProperty);
     }
 
     @GetMapping("/detail/{propertyId}")
@@ -113,31 +80,17 @@ public class PropertyController {
         return ResponseEntity.ok(propertyDetail);
     }
 
-    @PostMapping(path = "/create", consumes = {"multipart/form-data"})
-    public ResponseEntity<String> createProperty(@ModelAttribute PropertyForm propertyForm) {
-        // 獲取當前使用者
-        String username = getCurrentUserUsername();
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<DataResponseDTO<String>> createProperty(@ModelAttribute PropertyForm propertyForm) {
+        log.info("開始創建房源");
+        log.info("主圖片: {}", propertyForm.getMainImage());
+        log.info("其他圖片: {}", propertyForm.getImages());
 
-        // 通過使用者名稱獲取使用者對象
-        User user = userService.findByUsername(username);
-
-        // 設置 userId 到 PropertyForm 中
+        User user = userUtil.getCurrentUser();
         propertyForm.setUserId(user.getId());
-
-        // 創建房源
         propertyService.createProperty(propertyForm);
 
-        return new ResponseEntity<>("Property created successfully!", HttpStatus.CREATED);
-    }
-
-    // TODO : 挪方法到 Service
-    // 獲取當前登入的使用者名稱
-    private String getCurrentUserUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
-        }
+        DataResponseDTO<String> response = new DataResponseDTO<>("房源新增成功！");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

@@ -119,6 +119,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
     libraries,
     language: "zh-TW",
     mapIds: [GOOGLE_MAPS_ID],
+    version: "weekly",
   });
 
   const [map, setMap] = useState(null);
@@ -240,7 +241,6 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
       return () => {
         if (advancedMarker) {
-          // For AdvancedMarkerElement, we need to check if it has a map property
           if (advancedMarker.map) {
             advancedMarker.map = null;
           }
@@ -314,10 +314,10 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
         "星期六",
         "星期日",
       ];
+      // 這裡計算是因為 Date().getDay() 返回的 Array，第一位會是星期日，但 google 對於時間的排序會是從星期一開始
       const today = (new Date().getDay() + 6) % 7;
       const todayText = place.opening_hours.weekday_text[today];
       const isOpen = place.opening_hours.isOpen();
-      console.log(today);
 
       return (
         <>
@@ -662,9 +662,28 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
   const handleContactLandlord = () => {
     if (token) {
-      showChat(property.landlord_info.landlord_username); // 有登入，跳聊天室
+      fetch("/api/chat/startChat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiverId: property.landlord_info.landlord_username,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Failed to start chat");
+          }
+          showChat(property.landlord_info.landlord_username);
+        })
+        .catch((error) => {
+          console.error("Error starting chat:", error);
+          message.error("無法啟動聊天");
+        });
     } else {
-      setIsLoginModalVisible(true); // 沒登入，跳登入表單
+      setIsLoginModalVisible(true);
     }
   };
 
@@ -692,7 +711,6 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
       }
 
       setIsFavorite(!isFavorite); // 切換收藏狀態
-      message.success(isFavorite ? "已取消收藏" : "成功加入收藏");
 
       // 記錄或移除 "favorite" 操作
       if (!isFavorite) {
@@ -722,7 +740,7 @@ const PropertyDetail = ({ token, setIsLoginModalVisible, showChat }) => {
 
   const formatDescription = (description) => {
     if (!description) {
-      return [];
+      return ["此房源目前沒有提供描述"];
     }
 
     // 將文字按照句號或問號分割

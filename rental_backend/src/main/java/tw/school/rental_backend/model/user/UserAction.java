@@ -1,32 +1,55 @@
 package tw.school.rental_backend.model.user;
 
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.time.LocalDateTime;
-
-import tw.school.rental_backend.model.property.Property;
+import java.time.ZoneOffset;
 
 @Data
-@Entity
-@Table(name = "user_action")
+@AllArgsConstructor
+@NoArgsConstructor
+@DynamoDbBean
 public class UserAction {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
-    @JoinColumn(name = "property_id", nullable = false)
-    private Property property;
-
-    @Column(name = "action_type", nullable = false)
+    private String userId;
+    private String propertyId;
     private String actionType;
+    private Long actionTime;
 
-    @Column(name = "action_time", nullable = false)
-    private LocalDateTime actionTime;
+    // 定義 userId 為 Hash Key（分區鍵）
+    @DynamoDbPartitionKey
+    public String getUserId() {
+        return userId;
+    }
+
+    // 定義 actionTime 為 Sort Key（排序鍵）
+    @DynamoDbSortKey
+    public Long getActionTime() {
+        return actionTime;
+    }
+
+    // 定義 propertyId 為一個普通屬性
+    @DynamoDbAttribute("propertyId")
+    public String getPropertyId() {
+        return propertyId;
+    }
+
+    // 定義 actionType 為一個普通屬性
+    @DynamoDbAttribute("actionType")
+    public String getActionType() {
+        return actionType;
+    }
+
+    // 忽略該屬性，不存儲到 DynamoDB
+    @DynamoDbIgnore
+    public LocalDateTime getActionDateTime() {
+        return LocalDateTime.ofEpochSecond(actionTime, 0, ZoneOffset.UTC);
+    }
+
+    public void setActionDateTime(LocalDateTime dateTime) {
+        this.actionTime = dateTime.toEpochSecond(ZoneOffset.UTC);
+    }
 }
-
