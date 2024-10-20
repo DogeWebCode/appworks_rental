@@ -27,7 +27,6 @@ public class RedisMessageSubscriber implements MessageListener {
         this.messagingTemplate = messagingTemplate;
         log.info("RedisMessageSubscriber instantiated");
 
-        // 創建 ObjectMapper 並註冊 JavaTimeModule
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -65,7 +64,6 @@ public class RedisMessageSubscriber implements MessageListener {
         if (processedMessages.putIfAbsent(messageId, currentTime) != null) {
             return true;
         }
-        // 設置一定時間後自動刪除該消息ID，防止內存泄漏
         processedMessages.keySet().removeIf(key -> currentTime - processedMessages.get(key) > TimeUnit.SECONDS.toMillis(5));
         return false;
     }
