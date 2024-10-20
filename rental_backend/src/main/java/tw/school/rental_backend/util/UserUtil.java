@@ -28,4 +28,9 @@ public class UserUtil {
         User user = getCurrentUser();
         return user != null ? user.getId() : null;
     }
+
+    public String getCurrentUserName() {
+        User user = getCurrentUser();
+        return user != null ? user.getUsername() : null;
+    }
 }

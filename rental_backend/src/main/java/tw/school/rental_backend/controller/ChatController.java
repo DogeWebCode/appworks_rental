@@ -48,21 +48,21 @@ public class ChatController {
 
     @GetMapping("/messages")
     public ResponseEntity<?> getChatMessages(@RequestParam String receiverId) {
-        String senderId = userUtil.getCurrentUserId().toString();
+        String senderId = userUtil.getCurrentUserName();
         List<ChatMessage> messages = chatService.findChatMessages(senderId, receiverId);
         return ResponseEntity.ok(messages);
     }
 
     @GetMapping("/partners")
     public ResponseEntity<?> getChatPartners() {
-        String currentUserId = userUtil.getCurrentUserId().toString();
+        String currentUserId = userUtil.getCurrentUserName();
         List<String> chatPartners = chatService.findChatPartners(currentUserId);
         return ResponseEntity.ok(chatPartners);
     }
 
     @PostMapping("/startChat")
     public ResponseEntity<?> startChat(@RequestBody Map<String, String> requestBody) {
-        String senderId = userUtil.getCurrentUserId().toString();
+        String senderId = userUtil.getCurrentUserName();
         String receiverId = requestBody.get("receiverId");
         chatService.startChat(senderId, receiverId);
         return ResponseEntity.ok().build();
@@ -71,14 +71,14 @@ public class ChatController {
     @PostMapping("/messages/read")
     public ResponseEntity<?> markMessagesAsRead(@RequestBody Map<String, String> requestBody) {
         String partnerId = requestBody.get("partnerId");
-        String currentUserId = userUtil.getCurrentUserId().toString();
+        String currentUserId = userUtil.getCurrentUserName();
         chatService.markMessagesAsRead(currentUserId, partnerId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/messages/unread/count")
     public ResponseEntity<?> getUnreadMessageCount() {
-        String currentUserId = userUtil.getCurrentUserId().toString();
+        String currentUserId = userUtil.getCurrentUserName();
         Map<String, Integer> unreadMessageCount = chatService.findUnreadMessageCount(currentUserId);
         return ResponseEntity.ok(unreadMessageCount);
     }
