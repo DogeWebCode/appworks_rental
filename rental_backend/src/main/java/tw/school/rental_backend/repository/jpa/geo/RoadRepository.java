@@ -10,7 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface RoadRepository extends JpaRepository<Road, Long> {
-    Optional<Road> findByRoadName(String roadName);
 
     List<Road> findByDistrict(District district);
+
+    Optional<Road> findByRoadNameAndDistrict(String roadName, District district);
 }

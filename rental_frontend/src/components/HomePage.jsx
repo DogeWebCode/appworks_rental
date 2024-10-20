@@ -29,6 +29,7 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
   const [roads, setRoads] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [features, setFeatures] = useState([]);
+  const [timeoutId, setTimeoutId] = useState(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -116,7 +117,8 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     fetch("/api/geo/city")
       .then((res) => res.json())
       .then((data) => {
-        setCities(data.data);
+        const sortedData = data.data.sort((a, b) => a.id - b.id);
+        setCities(sortedData);
       })
       .catch((err) => console.error(err));
   }, []);
@@ -179,6 +181,9 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     setSelectedDistrict(null);
     setSelectedRoad(null);
 
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
+
     if (value) {
       searchParams.set("city", value);
     } else {
@@ -194,6 +199,9 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
     setSelectedDistrict(value);
     setSelectedRoad(null);
 
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
+
     if (value) {
       searchParams.set("district", value);
     } else {
@@ -207,6 +215,9 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
   const handleRoadChange = (value) => {
     setSelectedRoad(value);
 
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
+
     if (value) {
       searchParams.set("road", value);
     } else {
@@ -217,31 +228,62 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
   };
 
   const handleMinPriceChange = (value) => {
+    // 清除之前的計時器
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
     setMinPrice(value);
 
-    if (value !== null && value !== undefined) {
-      searchParams.set("minPrice", value);
-    } else {
-      searchParams.delete("minPrice");
-    }
-    searchParams.set("page", 0); // 重置頁數
-    setSearchParams(searchParams);
+    // 設置新的計時器，延遲檢查
+    const newTimeoutId = setTimeout(() => {
+      if (maxPrice !== null && value > maxPrice) {
+        setMaxPrice(value);
+        searchParams.set("maxPrice", value);
+      }
+      if (value !== null && value !== undefined) {
+        searchParams.set("minPrice", value);
+      } else {
+        searchParams.delete("minPrice");
+      }
+      searchParams.set("page", 0); // 重置頁數
+      setSearchParams(searchParams);
+    }, 500);
+
+    setTimeoutId(newTimeoutId);
   };
 
   const handleMaxPriceChange = (value) => {
+    // 清除之前的計時器
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
     setMaxPrice(value);
 
-    if (value !== null && value !== undefined) {
-      searchParams.set("maxPrice", value);
-    } else {
-      searchParams.delete("maxPrice");
-    }
-    searchParams.set("page", 0); // 重置頁數
-    setSearchParams(searchParams);
+    // 設置新的計時器，延遲檢查
+    const newTimeoutId = setTimeout(() => {
+      if (minPrice !== null && value < minPrice) {
+        setMinPrice(value);
+        searchParams.set("minPrice", value);
+      }
+      if (value !== null && value !== undefined) {
+        searchParams.set("maxPrice", value);
+      } else {
+        searchParams.delete("maxPrice");
+      }
+      searchParams.set("page", 0); // 重置頁數
+      setSearchParams(searchParams);
+    }, 500);
+
+    setTimeoutId(newTimeoutId);
   };
 
   const handleFacilitiesChange = (value) => {
     setSelectedFacilities(value);
+
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
 
     if (value.length > 0) {
       searchParams.set("facility", value.join(","));
@@ -254,6 +296,9 @@ const HomePage = ({ token, setIsLoginModalVisible }) => {
 
   const handleFeaturesChange = (value) => {
     setSelectedFeatures(value);
+
+    setIsRecommendation(false);
+    searchParams.delete("isRecommendation");
 
     if (value.length > 0) {
       searchParams.set("feature", value.join(","));

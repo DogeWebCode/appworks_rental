@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import tw.school.rental_backend.data.dto.PropertyDTO;
 import tw.school.rental_backend.data.dto.PropertyDetailDTO;
 import tw.school.rental_backend.data.dto.form.PropertyForm;
@@ -28,11 +29,15 @@ import tw.school.rental_backend.repository.jpa.geo.RoadRepository;
 import tw.school.rental_backend.repository.jpa.property.FacilityRepository;
 import tw.school.rental_backend.repository.jpa.property.*;
 import tw.school.rental_backend.repository.jpa.user.UserRepository;
+import tw.school.rental_backend.service.GeocodingService;
 import tw.school.rental_backend.service.PropertyService;
+import tw.school.rental_backend.data.dto.LatLngDTO;
+import tw.school.rental_backend.service.StorageService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,9 +55,22 @@ public class PropertyServiceImpl implements PropertyService {
     private final FacilityRepository facilityRepository;
     private final PropertyLayoutRepository propertyLayoutRepository;
     private final StorageService storageService;
+    private final GeocodingService geocodingService;
 
+    public PropertyServiceImpl(
+            PropertyRepository propertyRepository,
+            PropertyMapper propertyMapper,
+            PropertyDetailMapper propertyDetailMapper,
+            UserRepository userRepository,
+            CityRepository cityRepository,
+            DistrictRepository districtRepository,
+            RoadRepository roadRepository,
+            FeatureRepository featureRepository,
+            FacilityRepository facilityRepository,
+            PropertyLayoutRepository propertyLayoutRepository,
+            StorageService storageService,
+            GeocodingService geocodingService) {
 
-    public PropertyServiceImpl(PropertyRepository propertyRepository, PropertyMapper propertyMapper, PropertyDetailMapper propertyDetailMapper, UserRepository userRepository, CityRepository cityRepository, DistrictRepository districtRepository, RoadRepository roadRepository, FeatureRepository featureRepository, FacilityRepository facilityRepository, PropertyLayoutRepository propertyLayoutRepository, StorageService storageService) {
         this.propertyRepository = propertyRepository;
         this.propertyMapper = propertyMapper;
         this.propertyDetailMapper = propertyDetailMapper;
@@ -64,6 +82,7 @@ public class PropertyServiceImpl implements PropertyService {
         this.facilityRepository = facilityRepository;
         this.propertyLayoutRepository = propertyLayoutRepository;
         this.storageService = storageService;
+        this.geocodingService = geocodingService;
     }
 
     @Override
@@ -77,51 +96,35 @@ public class PropertyServiceImpl implements PropertyService {
             String[] facility,
             Pageable pageable) {
 
-        Specification<Property> spec = Specification.where(null);
+        Specification<Property> spec = buildSpecification(city, district, road, minPrice, maxPrice, features, facility);
 
-        // 動態添加條件
-        if (city != null) {
-            spec = spec.and(PropertySpecification.hasCity(city));
-        }
-
-        if (district != null) {
-            spec = spec.and(PropertySpecification.hasDistrict(district));
-        }
-
-        if (road != null) {
-            spec = spec.and(PropertySpecification.hasRoad(road));
-        }
-
-        if (minPrice != null && maxPrice != null) {
-            spec = spec.and(PropertySpecification.priceBetween(minPrice, maxPrice));
-        }
-
-        if (features != null && features.length > 0) {
-            spec = spec.and(PropertySpecification.hasFeatures(features));
-        }
-
-        if (facility != null && facility.length > 0) {
-            spec = spec.and(PropertySpecification.hasFacilities(facility));
-        }
-
-        // 查詢符合條件的房源，並返回 Page<Property>
         Page<Property> filteredPropertiesPage = propertyRepository.findAll(spec, pageable);
 
-        // 將 Property 轉換為 PropertyDTO
         return filteredPropertiesPage.map(propertyMapper::PropertyConvertToDTO);
     }
 
-    @Override
     @Transactional
+    @Override
     public PropertyDetailDTO getPropertyDetail(Long propertyId) {
-        Property property = propertyRepository.findById(propertyId).orElseThrow(() -> new RuntimeException("房源不存在"));
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new RuntimeException("房源不存在"));
         return propertyDetailMapper.PropertyConvertToDetailDTO(property);
     }
-
 
     @Transactional
     @Override
     public void createProperty(PropertyForm propertyForm) {
+        User user = userRepository.findById(propertyForm.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Property property = initializeProperty(propertyForm);
+        property.setUser(user);
+
+        setAddressAndGeocode(property, propertyForm);
+        saveProperty(property, propertyForm);
+    }
+
+    private Property initializeProperty(PropertyForm propertyForm) {
         Property property = new Property();
         property.setTitle(propertyForm.getTitle());
         property.setDescription(propertyForm.getDescription());
@@ -132,110 +135,155 @@ public class PropertyServiceImpl implements PropertyService {
         property.setPropertyType(propertyForm.getPropertyType());
         property.setBuildingType(propertyForm.getBuildingType());
         property.setArea(propertyForm.getArea());
-        if (propertyForm.getLessor() == null || propertyForm.getLessor().isEmpty()) {
-            property.setLessor("Unknown");
-        } else {
-            property.setLessor(propertyForm.getLessor());
-        }
+        property.setLessor(Optional.ofNullable(propertyForm.getLessor()).orElse("Unknown"));
         property.setFloor(propertyForm.getFloor());
         property.setTotalFloor(propertyForm.getTotalFloor());
-        if (propertyForm.getStatus() == null || propertyForm.getStatus().isEmpty()) {
-            property.setStatus("上架中");
-        } else {
-            property.setStatus(propertyForm.getStatus());
-        }
+        property.setStatus(Optional.ofNullable(propertyForm.getStatus()).orElse("上架中"));
+        property.setCreatedAt(LocalDateTime.now());
+        property.setModifiedTime(LocalDateTime.now());
 
-        // TODO:這裏之後要換成串 GoogleAPI 拿回經緯度
-        if (propertyForm.getLatitude() == null) {
-            property.setLatitude(BigDecimal.valueOf(22.55));
+        String mainImageUrl = uploadMainImage(propertyForm.getMainImage());
+        property.setMainImage(mainImageUrl);
+        return property;
+    }
+
+    private void setAddressAndGeocode(Property property, PropertyForm propertyForm) {
+        String fullAddress = propertyForm.getCityName() + propertyForm.getDistrictName() + propertyForm.getRoadName() + propertyForm.getAddress();
+        log.info("Address: {}", fullAddress);
+
+        // 使用經緯度
+        if (propertyForm.getLatitude() == null || propertyForm.getLongitude() == null) {
+            Optional<LatLngDTO> latLng = geocodingService.getLatLng(fullAddress);
+            if (latLng.isPresent()) {
+                property.setLatitude(BigDecimal.valueOf(latLng.get().getLat()));
+                property.setLongitude(BigDecimal.valueOf(latLng.get().getLng()));
+            } else {
+                throw new RuntimeException("無法通過地址獲取經緯度");
+            }
         } else {
             property.setLatitude(propertyForm.getLatitude());
-        }
-
-        // TODO:這裏之後要換成串 GoogleAPI 拿回經緯度
-        if (propertyForm.getLongitude() == null) {
-            property.setLongitude(BigDecimal.valueOf(121.81));
-        } else {
             property.setLongitude(propertyForm.getLongitude());
+
         }
 
-        // 設置房東
-        User user = userRepository.findById(propertyForm.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        property.setUser(user);
+        setCityDistrictRoad(property, propertyForm);
+    }
 
-        // 設置地區
+    private void setCityDistrictRoad(Property property, PropertyForm propertyForm) {
         City city = cityRepository.findByCityName(propertyForm.getCityName())
                 .orElseThrow(() -> new RuntimeException("City not found"));
-        District district = districtRepository.findByDistrictName(propertyForm.getDistrictName())
-                .orElseThrow(() -> new RuntimeException("District not found"));
-        Road road = roadRepository.findByRoadName(propertyForm.getRoadName())
-                .orElseThrow(() -> new RuntimeException("Road not found"));
+        District district = districtRepository.findByDistrictNameAndCity(propertyForm.getDistrictName(), city)
+                .orElseThrow(() -> new RuntimeException("District not found in the city: " + propertyForm.getCityName()));
+        Road road = roadRepository.findByRoadNameAndDistrict(propertyForm.getRoadName(), district)
+                .orElseThrow(() -> new RuntimeException("Road not found in the district and city"));
         property.setCity(city);
         property.setDistrict(district);
         property.setRoad(road);
         property.setAddress(propertyForm.getAddress());
+    }
 
-        // 上傳主圖片
-        String mainImageUrl = storageService.uploadFile(propertyForm.getMainImage(), "images/");
-        property.setMainImage(mainImageUrl);
-
-        property.setCreatedAt(LocalDateTime.now());
-        property.setModifiedTime(LocalDateTime.now());
-
-        // 生成 ID
+    private void saveProperty(Property property, PropertyForm propertyForm) {
         propertyRepository.save(property);
 
-        // 設置房屋佈局
-        PropertyLayout propertyLayout = new PropertyLayout();
-        propertyLayout.setProperty(property);
-        propertyLayout.setRoomCount(propertyForm.getRoomCount());
-        propertyLayout.setLivingRoomCount(propertyForm.getLivingRoomCount());
-        propertyLayout.setBathroomCount(propertyForm.getBathroomCount());
-        propertyLayout.setBalconyCount(propertyForm.getBalconyCount());
-        propertyLayout.setKitchenCount(propertyForm.getKitchenCount());
-
+        PropertyLayout propertyLayout = createPropertyLayout(property, propertyForm);
         propertyLayoutRepository.save(propertyLayout);
 
-        // 保存特色
-        List<PropertyFeature> features = propertyForm.getFeatures().stream()
+        List<PropertyFeature> features = createPropertyFeatures(property, propertyForm.getFeatures());
+        property.setFeature(features);
+
+        List<PropertyFacility> facilities = createPropertyFacilities(property, propertyForm.getFacilities());
+        property.setFacility(facilities);
+
+        List<PropertyImage> images = uploadPropertyImages(property, propertyForm.getImages());
+        property.setImage(images);
+
+        propertyRepository.save(property);
+    }
+
+    private PropertyLayout createPropertyLayout(Property property, PropertyForm propertyForm) {
+        PropertyLayout layout = new PropertyLayout();
+        layout.setProperty(property);
+        layout.setRoomCount(propertyForm.getRoomCount());
+        layout.setLivingRoomCount(propertyForm.getLivingRoomCount());
+        layout.setBathroomCount(propertyForm.getBathroomCount());
+        layout.setBalconyCount(propertyForm.getBalconyCount());
+        layout.setKitchenCount(propertyForm.getKitchenCount());
+        return layout;
+    }
+
+    private List<PropertyFeature> createPropertyFeatures(Property property, List<String> featureNames) {
+        return featureNames.stream()
                 .map(featureName -> {
                     Feature feature = featureRepository.findByFeatureName(featureName)
                             .orElseThrow(() -> new RuntimeException("Feature not found"));
                     return new PropertyFeature(property, feature);
-                }).collect(Collectors.toList());
-        property.setFeature(features);
+                })
+                .collect(Collectors.toList());
+    }
 
-        // 保存設備
-        List<PropertyFacility> facilities = propertyForm.getFacilities().stream()
+    private List<PropertyFacility> createPropertyFacilities(Property property, List<String> facilityNames) {
+        return facilityNames.stream()
                 .map(facilityName -> {
                     Facility facility = facilityRepository.findByFacilityName(facilityName)
                             .orElseThrow(() -> new RuntimeException("Facility not found"));
                     return new PropertyFacility(property, facility);
-                }).collect(Collectors.toList());
-        property.setFacility(facilities);
+                })
+                .collect(Collectors.toList());
+    }
 
-        // 保存圖片
-        List<PropertyImage> images = propertyForm.getImages().stream()
+    private String uploadMainImage(MultipartFile mainImage) {
+        String imageUrl = storageService.uploadFile(mainImage, "images/");
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            throw new RuntimeException("Failed to upload main image, URL is null or empty");
+        }
+        return imageUrl;
+    }
+
+    private List<PropertyImage> uploadPropertyImages(Property property, List<MultipartFile> images) {
+        return images.stream()
                 .map(image -> {
+                    // 上傳文件，並獲取文件的 URL
                     String imageUrl = storageService.uploadFile(image, "images/");
-                    log.info("Image URL: " + imageUrl);
+
+                    // 檢查是否上傳成功
                     if (imageUrl == null || imageUrl.isEmpty()) {
                         throw new RuntimeException("Failed to upload image, URL is null or empty");
                     }
+
                     PropertyImage propertyImage = new PropertyImage(property, imageUrl);
                     propertyImage.setCreatedAt(LocalDateTime.now());
                     propertyImage.setModifiedTime(LocalDateTime.now());
                     return propertyImage;
-                }).collect(Collectors.toList());
-        property.setImage(images);
+                })
+                .collect(Collectors.toList());
+    }
 
-        // 設置時間戳
-        property.setCreatedAt(LocalDateTime.now());
-        property.setModifiedTime(LocalDateTime.now());
 
-        // 保存 property 到資料庫
-        propertyRepository.save(property);
+    private Specification<Property> buildSpecification(
+            String city, String district, String road, Integer minPrice, Integer maxPrice, String[] features, String[] facility) {
+
+        Specification<Property> spec = Specification.where(null);
+
+        if (city != null) {
+            spec = spec.and(PropertySpecification.hasCity(city));
+        }
+        if (district != null) {
+            spec = spec.and(PropertySpecification.hasDistrict(district));
+        }
+        if (road != null) {
+            spec = spec.and(PropertySpecification.hasRoad(road));
+        }
+        if (minPrice != null && maxPrice != null) {
+            spec = spec.and(PropertySpecification.priceBetween(minPrice, maxPrice));
+        }
+        if (features != null && features.length > 0) {
+            spec = spec.and(PropertySpecification.hasFeatures(features));
+        }
+        if (facility != null && facility.length > 0) {
+            spec = spec.and(PropertySpecification.hasFacilities(facility));
+        }
+
+        return spec;
     }
 
     @Override
@@ -244,4 +292,3 @@ public class PropertyServiceImpl implements PropertyService {
                 .orElseThrow(() -> new RuntimeException("找不到房源"));
     }
 }
-

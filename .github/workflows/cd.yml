@@ -1,0 +1,45 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy-to-ec2:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ec2_host: ["EC2_HOST_01", "EC2_HOST_02"]
+
+    steps:
+      - name: SSH to EC2 and deploy on ${{ matrix.ec2_host }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets[matrix.ec2_host] }} # 使用 matrix 來動態引用 secrets 中的值
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "Connected to ${{ secrets[matrix.ec2_host] }}"
+            docker pull james66689/rental_backend:latest
+
+            # 確保不存在與 rental_backend 名稱衝突的容器
+            if docker ps -a --filter "name=rental_backend" --format "{{.ID}}" | grep .; then
+              docker stop rental_backend
+              docker rm rental_backend
+            fi
+
+            sleep 2
+
+            docker run -d \
+              -v /etc/localtime:/etc/localtime:ro \
+              -v /etc/timezone:/etc/timezone:ro \
+              --name rental_backend \
+              -p 8080:8080 \
+              --restart unless-stopped \
+              james66689/rental_backend:latest
+
+            docker image prune -f

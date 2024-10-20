@@ -3,6 +3,7 @@ package tw.school.rental_backend.middleware;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.socket.WebSocketHandler;
@@ -15,16 +16,15 @@ import java.util.Map;
 @Log4j2
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
 
     public JwtHandshakeInterceptor(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                                   WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        log.info("WebSocket handshake initiated: {}", request.getURI());
+    public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
+                                   @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
 
         String token = resolveToken(request);
 
@@ -34,14 +34,12 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             log.info("WebSocket handshake authenticated successfully for user: {}", auth.getName());
             return true;
         }
-
-        log.warn("WebSocket handshake authentication failed");
         return false;
     }
 
     @Override
-    public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response,
-                               WebSocketHandler wsHandler, Exception exception) {
+    public void afterHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
+                               @NonNull WebSocketHandler wsHandler, Exception exception) {
         if (exception == null) {
             log.info("WebSocket handshake completed successfully: {}", request.getURI());
         } else {

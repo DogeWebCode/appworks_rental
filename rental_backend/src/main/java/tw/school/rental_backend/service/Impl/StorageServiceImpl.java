@@ -4,15 +4,16 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import tw.school.rental_backend.service.StorageService;
 
 import java.io.IOException;
 import java.util.UUID;
 
 @Service
-public class StorageService {
+public class StorageServiceImpl implements StorageService {
     private final AmazonS3 amazonS3;
 
-    public StorageService(AmazonS3 amazonS3) {
+    public StorageServiceImpl(AmazonS3 amazonS3) {
         this.amazonS3 = amazonS3;
     }
 

@@ -32,7 +32,7 @@ public class PropertySpecification {
 
     public static Specification<Property> hasFeatures(String[] featureNames) {
         return (root, query, criteriaBuilder) -> {
-            Join<Property, PropertyFeature> featureJoin = root.join("feature"); // "feature" 是 Property 中的對應集合
+            Join<Property, PropertyFeature> featureJoin = root.join("feature");
             Join<PropertyFeature, Feature> actualFeatureJoin = featureJoin.join("feature");
 
             return actualFeatureJoin.get("featureName").in((Object[]) featureNames);
@@ -41,7 +41,7 @@ public class PropertySpecification {
 
     public static Specification<Property> hasFacilities(String[] facilityNames) {
         return (root, query, criteriaBuilder) -> {
-            Join<Property, PropertyFacility> facilityJoin = root.join("facility"); // "facility" 是 Property 中的對應集合
+            Join<Property, PropertyFacility> facilityJoin = root.join("facility");
             Join<PropertyFacility, Facility> actualFacilityJoin = facilityJoin.join("facility");
 
             return actualFacilityJoin.get("facilityName").in((Object[]) facilityNames);
