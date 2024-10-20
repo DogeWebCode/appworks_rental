@@ -173,7 +173,7 @@ const PropertyUploadForm = ({ token, setIsLoginModalVisible }) => {
     }
 
     // 發送請求
-    fetch("/api/property/create", {
+    fetch("/api/property", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
