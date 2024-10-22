@@ -31,6 +31,18 @@
 
 Developed using Java SpringBoot + React, this site aims to provide a rental-focused platform, offering a better user experience for those who prefer renting over buying a home.
 
+## Test Accounts
+
+Here are two sets of test credentials, or you can register to explore the features.  
+
+| Username               | Password |
+|------------------------|----------|
+| testuser3@example.com   | user     |
+| testuser4@example.com   | admin    |
+
+
+For property recommendations, the weights are calculated daily to reduce the system's load. New users will receive the 12 newest properties as recommendations.
+
 ## Features
 
 #### Recommendation System
@@ -58,16 +70,20 @@ Developed using Java SpringBoot + React, this site aims to provide a rental-focu
 - Automatically fetches latitude and longitude based on the provided address
 - Preview the property card before publishing to see how it will appear
 
-## Test Accounts
+## Technologies Used
 
-Here are two sets of test credentials, or you can register to explore the features.  
-Username: testuser3@example.com  
-Password: user
+- Java Spring Boot
+- React
+- Docker
+- AWS (Load Balancer, EC2, S3, CloudFront, CloudWatch, EventBridge, Lambda, RDS(MySQL), Elastic Cache)
+- MongoDB
+- DynamoDB
+- Google Maps API
 
-Username: testuser4@example.com  
-Password: admin
 
-For property recommendations, the weights are calculated daily to reduce the system's load. New users will receive the 12 newest properties as recommendations.
+## Architecture
+![System Architecture](https://drive.google.com/uc?export=view&id=12qLT2LgEb7dgSJfkWd1sWrj7QCZzOZtg)
+
 
 ## Contact
 
